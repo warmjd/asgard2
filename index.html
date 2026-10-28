@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>아스가르드 · 익스트림 너클</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#12121f; --panel:#1d1f33; --panel2:#262942; --line:#3b3f66; --gold:#ffd43b; --text:#e9ecf5; --dim:#8d92b5;
+  --ok:#51cf66; --bad:#ff6b6b; --tc:#9aa0a6;
+}
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; background:var(--bg); color:var(--text); font-family:'DotGothic16','Apple SD Gothic Neo','Malgun Gothic',sans-serif; }
+body { max-width:480px; margin:0 auto; padding:14px 16px 60px; }
+h1 { margin:0; font-size:1.45rem; letter-spacing:1px; color:var(--gold); text-shadow:2px 2px 0 #000; text-align:center; }
+.sub { text-align:center; color:var(--dim); font-size:.8rem; margin:4px 0 12px; }
+.card { background:var(--panel); border:3px solid var(--line); box-shadow:0 0 0 3px #0a0a14, 4px 6px 0 3px #0a0a14; padding:12px; margin:14px 0; position:relative; }
+.title { font-size:.95rem; color:var(--gold); margin-bottom:8px; }
+button { font-family:inherit; cursor:pointer; color:#fff; }
+.btn { border:3px solid #000; background:#3b5bdb; padding:10px 14px; font-size:.95rem; box-shadow:inset -3px -3px 0 rgba(0,0,0,.35), inset 3px 3px 0 rgba(255,255,255,.2); }
+.btn:active { transform:translateY(2px); }
+.btn:disabled { background:#4a4d66; color:#999; cursor:not-allowed; }
+.btn.red { background:#e03131; } .btn.gray { background:#4a4d66; } .btn.green { background:#2f9e44; }
+#status { text-align:center; font-size:.78rem; padding:6px; border:2px solid var(--line); background:var(--panel2); margin-bottom:8px; }
+#status.ok { color:var(--ok); } #status.error { color:var(--bad); }
+#snd { position:absolute; right:0; top:0; background:var(--panel2); border:2px solid var(--line); padding:4px 8px; font-size:1rem; }
+header { position:relative; }
+
+/* 내 캐릭터 */
+.me { display:flex; align-items:center; gap:12px; }
+#me-av { width:72px; height:90px; image-rendering:pixelated; background:var(--panel2); border:3px solid var(--line); }
+#me-av.bob { animation:bob 1.6s ease-in-out infinite; }
+@keyframes bob { 50% { transform:translateY(-3px); } }
+.hair { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; align-items:center; }
+.sw { width:22px; height:22px; border:2px solid #000; cursor:pointer; }
+.sw.on { outline:2px solid var(--gold); }
+#hair-pick { width:30px; height:26px; padding:0; border:2px solid #000; background:none; }
+
+/* 강화 무대 */
+.stage { position:relative; width:260px; height:260px; margin:6px auto 4px; }
+#aura { position:absolute; inset:0; width:100%; height:100%; }
+#frame { position:absolute; left:50%; top:50%; width:176px; height:176px; transform:translate(-50%,-50%); border:6px solid var(--tc); background:radial-gradient(circle at 50% 40%, #2c2f52, #14152a); box-shadow:0 0 14px var(--tc), inset 0 0 18px rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; transition:border-color .4s, box-shadow .4s; }
+#frame::before, #frame::after { content:''; position:absolute; width:12px; height:12px; background:var(--tc); }
+#frame::before { left:-9px; top:-9px; } #frame::after { right:-9px; bottom:-9px; }
+#knuckle { width:144px; height:144px; image-rendering:pixelated; }
+#frame.hit { animation:hit .5s; } @keyframes hit { 0%,100% { transform:translate(-50%,-50%); } 20% { transform:translate(-54%,-50%); } 40% { transform:translate(-46%,-52%); } 60% { transform:translate(-53%,-49%); } }
+#frame.pop { animation:pop .7s; } @keyframes pop { 0% { transform:translate(-50%,-50%) scale(1); } 35% { transform:translate(-50%,-50%) scale(1.14); filter:brightness(2); } 100% { transform:translate(-50%,-50%) scale(1); } }
+#frame.charge { animation:chg .8s ease-in; } @keyframes chg { 0% { transform:translate(-50%,-50%) scale(1); } 100% { transform:translate(-50%,-50%) scale(1.08); filter:brightness(1.5); } }
+#stepname { text-align:center; font-size:1.25rem; margin-top:6px; text-shadow:2px 2px 0 #000; }
+#steplv { text-align:center; color:var(--dim); font-size:.8rem; }
+#rate { text-align:center; margin:8px 0 4px; font-size:.95rem; color:#ffe08a; }
+.hearts { text-align:center; font-size:1.15rem; letter-spacing:2px; margin:6px 0 2px; }
+.hearts .e { opacity:.25; filter:grayscale(1); }
+#etext { text-align:center; font-size:.78rem; color:var(--dim); margin-bottom:8px; }
+#go { width:100%; padding:14px; font-size:1.1rem; background:#e8590c; }
+#result { margin-top:10px; min-height:52px; padding:8px; background:var(--panel2); border:2px solid var(--line); text-align:center; font-size:.92rem; line-height:1.5; }
+#result b.ok { color:var(--ok); } #result b.bad { color:var(--dim); }
+.plus { position:absolute; left:50%; top:30%; transform:translateX(-50%); font-size:1.6rem; color:var(--ok); text-shadow:2px 2px 0 #000; pointer-events:none; opacity:0; }
+.plus.go { animation:plus 1.2s ease-out; } @keyframes plus { 0% { opacity:0; transform:translate(-50%,10px); } 20% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50px); } }
+
+/* 사다리 */
+.ladder div { display:flex; justify-content:space-between; padding:5px 8px; border:2px solid transparent; font-size:.85rem; color:var(--dim); }
+.ladder div.done { color:#b9c0e0; } .ladder div.now { color:#fff; border-color:var(--gold); background:rgba(255,212,59,.08); }
+.ladder small { color:var(--dim); }
+
+/* 참가자 */
+.pl { display:flex; align-items:center; gap:10px; padding:6px 4px; border-bottom:2px dashed var(--line); }
+.pl:last-child { border-bottom:0; }
+.pl img { width:30px; height:38px; image-rendering:pixelated; background:var(--panel2); border:2px solid var(--line); }
+.pl .nm { flex:1; } .pl .st { color:var(--gold); font-size:.85rem; } .pl.mine .nm { color:var(--gold); }
+.rules ul { margin:0; padding-left:18px; font-size:.85rem; line-height:1.7; color:#cfd3ee; }
+
+/* 모달 */
+.ov { position:fixed; inset:0; background:rgba(0,0,0,.78); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+.ov .box { background:var(--panel); border:3px solid var(--gold); padding:18px; width:100%; max-width:360px; box-shadow:0 0 0 3px #000; }
+.ov h3 { margin:0 0 10px; color:var(--gold); font-size:1.05rem; }
+.ov input[type=text], .ov input[type=password], .ov input[type=tel] { width:100%; padding:10px; font-size:1.1rem; font-family:inherit; background:var(--panel2); color:#fff; border:3px solid var(--line); margin:6px 0; text-align:center; }
+.names { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.names button { background:var(--panel2); border:2px solid var(--line); padding:7px 10px; font-size:.85rem; }
+#err { color:var(--bad); font-size:.8rem; min-height:18px; }
+#toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px); background:#000; color:#fff; border:2px solid var(--gold); padding:10px 14px; font-size:.88rem; opacity:0; transition:.3s; z-index:99; max-width:88%; text-align:center; pointer-events:none; }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#ending { position:fixed; inset:0; z-index:80; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; background:radial-gradient(circle,#3b2a00,#000 75%); }
+#ending h2 { color:var(--gold); font-size:1.7rem; margin:10px 0; text-shadow:2px 2px 0 #000; }
+#endbar { display:none; background:#4a3b00; border:3px solid var(--gold); color:#ffe08a; text-align:center; padding:10px; margin:10px 0; font-size:.9rem; line-height:1.5; }
+.arow { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:.8rem; border-bottom:1px dashed var(--line); }
+.arow button { padding:4px 8px; font-size:.72rem; margin-left:4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <button id="snd" onclick="toggleSnd()">🔊</button>
+  <h1>🥊 익스트림 너클</h1>
+  <div class="sub">아스가르드 · 강화 시뮬레이터</div>
+</header>
+
+<div id="status">⏳ 서버에 연결하는 중...</div>
+<div id="endbar"></div>
+
+<div class="card">
+  <div class="me">
+    <canvas id="me-av" width="32" height="40"></canvas>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:.75rem;color:var(--dim)">내 캐릭터 · 직업 <b style="color:var(--text)">무도가</b></div>
+      <div id="me-name" style="font-size:1.15rem;color:var(--gold);margin:2px 0">-</div>
+      <button class="btn gray" style="padding:6px 10px;font-size:.8rem" onclick="openJoin()">변경 · 참가</button>
+    </div>
+  </div>
+  <div class="hair" id="hair-box">
+    <span style="font-size:.75rem;color:var(--dim)">머리색</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stage">
+    <canvas id="aura" width="260" height="260"></canvas>
+    <div id="frame"><canvas id="knuckle" width="32" height="32"></canvas></div>
+    <div class="plus" id="plus">▲ 성공!</div>
+  </div>
+  <div id="stepname">-</div>
+  <div id="steplv"></div>
+  <div id="rate"></div>
+  <div class="hearts" id="hearts"></div>
+  <div id="etext"></div>
+  <button class="btn" id="go" onclick="enhance()" disabled>⏳ 불러오는 중...</button>
+  <div id="result">너클을 강화해 데카에 도전하세요!</div>
+</div>
+
+<div class="card">
+  <div class="title">📊 강화 단계 · 성공 확률</div>
+  <div class="ladder" id="ladder"></div>
+</div>
+
+<div class="card">
+  <div class="title">👥 참가자 <span id="pcount" style="color:var(--dim);font-size:.78rem"></span></div>
+  <div id="players"></div>
+</div>
+
+<div class="card rules">
+  <div class="title">📜 규칙</div>
+  <ul>
+    <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 최대 10개까지 모아둘 수 있어요.</li>
+    <li>결과는 <b>성공(한 단계 상승)</b> 아니면 <b>유지</b>, 둘 중 하나예요. 파괴도 하락도 없습니다.</li>
+    <li>위 단계로 갈수록 성공 확률이 크게 낮아집니다. 실패가 쌓여도 확률은 오르지 않아요.</li>
+    <li>가장 먼저 <b>10단계 데카</b>에 오르는 사람이 나오면 그 즉시 시즌이 종료됩니다!</li>
+  </ul>
+</div>
+
+<div class="card" id="admin" style="display:none">
+  <div class="title">🛠 운영자</div>
+  <div id="admin-list"></div>
+  <button class="btn green" style="width:100%;margin-top:8px" onclick="backupData()">💾 데이터 백업 다운로드</button>
+</div>
+
+<!-- 참가/로그인 -->
+<div class="ov" id="join"><div class="box">
+  <h3>🥊 입장하기</h3>
+  <div style="font-size:.8rem;color:var(--dim)">이미 있는 닉네임을 눌러 입장하거나, 새 닉네임을 만드세요.</div>
+  <div class="names" id="join-names"></div>
+  <input type="text" id="join-input" maxlength="8" placeholder="새 닉네임 (8자 이하)" autocomplete="off">
+  <div id="join-err" style="color:var(--bad);font-size:.8rem;min-height:18px"></div>
+  <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="createName()">새로 만들기</button><button class="btn gray" id="join-close" onclick="closeJoin()">닫기</button></div>
+</div></div>
+
+<div class="ov" id="pin"><div class="box">
+  <h3 id="pin-title">비밀번호</h3>
+  <div style="font-size:.8rem;color:var(--dim)" id="pin-desc">숫자 4자리</div>
+  <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off">
+  <div id="err"></div>
+  <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="submitPin()">확인</button><button class="btn gray" onclick="cancelPin()">취소</button></div>
+</div></div>
+
+<div id="ending">
+  <div style="font-size:4rem">🏆</div>
+  <h2 id="end-title">시즌 종료!</h2>
+  <p id="end-text" style="line-height:1.7;white-space:pre-wrap"></p>
+  <button class="btn" style="padding:12px 24px" onclick="document.getElementById('ending').style.display='none'">확인</button>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+/* ============ ⚙️ 설정 (새 Firebase 프로젝트의 값으로 교체하세요) ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyD0uf5oFmwPBBLZL0uXI-X7PNMDqKm898M",
+  authDomain: "asgard-8731f.firebaseapp.com",
+  databaseURL: "https://asgard-8731f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "asgard-8731f",
+  storageBucket: "asgard-8731f.firebasestorage.app",
+  messagingSenderId: "533089313687",
+  appId: "1:533089313687:web:c546ea2582e67db78c5ad2"
+};
+const ADMIN = '조돌맹';                         // 운영자 닉네임 (비번 초기화·삭제·백업 가능)
+const MAXE = 10, REGEN = 20 * 60 * 1000;       // 체력: 최대 10, 20분마다 +1
+// 각 단계에서 다음 단계로 올라갈 성공 확률(%). 모노→다이 … 노나→데카 (한 달 기준)
+const RATE = [6.6, 5.5, 4.4, 3.3, 2.2, 1.32, 0.88, 0.55, 0.33];
+const STEPS = ['모노 (Mono)', '다이 (Di)', '트라이 (Tri)', '테트라 (Tetra)', '펜타 (Penta)', '헥사 (Hexa)', '헵타 (Hepta)', '옥타 (Octa)', '노나 (Nona)', '데카 (Deca)'];
+const TIER = ['#9aa0a6', '#c47a3d', '#cfd6df', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#ff922b', '#ffffff'];
+const HAIRS = ['#6b4a2b', '#2b2b3a', '#e8c15a', '#d6336c', '#a56cc1', '#4dabf7', '#38d9a9', '#e8590c', '#f1f3f5', '#c92a2a'];
+const WIN = ['너클이 번쩍이며 한 단계 진화했다!', '주먹에 기운이 모이더니 단단하게 변했다!', '오오, 손맛이 확 달라졌다. 성공!', '너클이 금빛을 내뿜었다!', '꽉 쥔 주먹 안에서 빛이 터졌다!'];
+const STAY = ['너클이 잠잠하다… 변화는 없었다.', '기운이 흩어졌다. 그대로다.', '아쉽다. 다시 한 번!', '조금만 더… 아직 때가 아닌가 보다.', '주먹을 쥐었다 폈다. 변화 없음.'];
+
+/* ============ 유틸 ============ */
+const $ = (id) => document.getElementById(id);
+const NAME_RE = /^[가-힣A-Za-z0-9_-]{1,8}$/, HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
+function setStatus(c, t) { const s = $('status'); s.className = c; s.textContent = t; }
+
+/* ============ 사운드 (가벼운 효과음) ============ */
+const Snd = (() => {
+  let ac = null, on = ls.get('knk_snd') !== '0';
+  const ctx = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); return ac; };
+  const tone = (type, f, f2, dur, vol, delay = 0) => { if (!on) return; const a = ctx(); if (!a) return; const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f2), t + dur); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + .05); };
+  return {
+    get on() { return on; },
+    toggle() { on = !on; ls.set('knk_snd', on ? '1' : '0'); return on; },
+    charge() { tone('sawtooth', 110, 520, .8, .12); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone('square', f, f, .18, .2, i * .08)); },
+    stay() { tone('sine', 180, 70, .3, .3); },
+    big() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone('triangle', f, f, .45, .25, i * .12)); }
+  };
+})();
+window.toggleSnd = () => { $('snd').textContent = Snd.toggle() ? '🔊' : '🔇'; };
+$('snd').textContent = Snd.on ? '🔊' : '🔇';
+
+/* ============ 🥊 픽셀 그림: 무도가 캐릭터 (오리지널) ============ */
+function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = (v) => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`; }
+function drawFighter(cv, hair) {
+  const x = cv.getContext('2d'); x.clearRect(0, 0, 32, 40); x.imageSmoothingEnabled = false;
+  const R = (px, py, w, h, c) => { x.fillStyle = c; x.fillRect(px, py, w, h); };
+  const H = hair, H2 = shade(hair, .68), SK = '#f6d2b3', SK2 = '#e0b48e', W = '#f1f3f5', W2 = '#ced4da', BELT = '#2b2b3a', RED = '#e03131', PANT = '#3d4c73', PANT2 = '#2f3b59';
+  R(21, 10, 4, 10, H2); R(23, 18, 2, 4, H2);                                  // 포니테일
+  R(9, 4, 14, 7, H); R(8, 8, 3, 9, H); R(21, 8, 3, 8, H); R(10, 3, 12, 2, H);   // 머리카락
+  R(11, 9, 10, 8, SK);                                                         // 얼굴
+  R(11, 9, 10, 2, H); R(10, 9, 2, 5, H); R(20, 9, 2, 5, H);                    // 앞머리
+  R(9, 7, 14, 2, RED); R(6, 8, 3, 2, RED); R(5, 10, 2, 3, RED);                // 머리띠
+  R(13, 12, 2, 3, '#2b2b3a'); R(18, 12, 2, 3, '#2b2b3a'); R(13, 12, 1, 1, '#fff'); R(18, 12, 1, 1, '#fff'); // 눈
+  R(15, 15, 2, 1, '#c97b63'); R(12, 15, 1, 1, '#ffb3a7'); R(20, 15, 1, 1, '#ffb3a7');  // 입/볼
+  R(10, 18, 12, 9, W); R(10, 18, 12, 1, W2); R(14, 18, 4, 3, SK); R(15, 21, 2, 2, W2); // 도복 상의
+  R(7, 19, 4, 7, W); R(21, 19, 4, 7, W); R(7, 25, 4, 1, W2); R(21, 25, 4, 1, W2);      // 소매
+  R(6, 26, 5, 4, SK); R(21, 26, 5, 4, SK); R(6, 26, 5, 1, RED); R(21, 26, 5, 1, RED);   // 주먹(붕대)
+  R(10, 27, 12, 3, BELT); R(15, 27, 3, 3, RED); R(18, 29, 2, 4, BELT);                  // 띠
+  R(11, 30, 10, 6, PANT); R(15, 31, 2, 5, PANT2);                                       // 바지
+  R(11, 36, 4, 3, SK2); R(17, 36, 4, 3, SK2); R(11, 38, 4, 1, W2); R(17, 38, 4, 1, W2); // 발
+}
+const avCache = {};
+function avatarURL(hair) { hair = HEX_RE.test(hair) ? hair : HAIRS[0]; if (!avCache[hair]) { const c = document.createElement('canvas'); c.width = 32; c.height = 40; drawFighter(c, hair); avCache[hair] = c.toDataURL(); } return avCache[hair]; }
+
+/* ============ 🥊 픽셀 그림: 너클 아이콘 ============ */
+function drawKnuckle(step) {
+  const cv = $('knuckle'), x = cv.getContext('2d'); x.clearRect(0, 0, 32, 32);
+  const t = TIER[step - 1], base = step === 10 ? '#ffe066' : t, dk = shade(base, .55), md = shade(base, .8), hi = shade(base, 1.25);
+  const R = (px, py, w, h, c) => { x.fillStyle = c; x.fillRect(px, py, w, h); };
+  R(3, 14, 26, 8, '#000'); R(4, 15, 24, 6, md);                       // 몸통 외곽
+  for (let i = 0; i < 4; i++) { const fx = 4 + i * 6; R(fx - 1, 8, 7, 8, '#000'); R(fx, 9, 5, 7, base); R(fx + 1, 10, 3, 4, '#000'); R(fx, 9, 5, 1, hi); R(fx, 15, 5, 1, dk); }   // 손가락 고리
+  R(4, 15, 24, 1, hi); R(4, 20, 24, 1, dk);
+  R(4, 22, 22, 5, '#000'); R(5, 22, 20, 4, md); R(5, 22, 20, 1, hi); R(5, 25, 20, 1, dk);        // 손바닥 그립
+  R(24, 23, 6, 5, '#000'); R(25, 24, 4, 3, dk); R(26, 25, 2, 1, '#000');                          // 엄지 걸이
+  const spikes = step >= 4 ? Math.min(4, Math.floor((step - 1) / 2)) : 0;                         // 단계가 오르면 가시
+  for (let i = 0; i < spikes; i++) { const fx = 6 + i * 6; R(fx, 5, 1, 4, '#000'); R(fx - 1, 6, 3, 2, hi); R(fx, 4, 1, 2, hi); }
+  if (step >= 6) { R(15, 17, 2, 2, '#fff'); R(14, 18, 4, 1, '#fff'); R(15, 19, 2, 1, '#fff'); }    // 중앙 보석 반짝
+  if (step >= 8) { R(7, 17, 2, 2, hi); R(23, 17, 2, 2, hi); }
+  if (step === 10) { R(2, 12, 1, 1, '#fff'); R(29, 12, 1, 1, '#fff'); R(16, 3, 1, 3, '#fff'); R(15, 4, 3, 1, '#fff'); }
+}
+const aura = $('aura').getContext('2d');
+let curStep = 1;
+function drawAura(ts) {
+  const w = 260, c = w / 2, s = curStep, k = s / 10, tm = ts / 1000;
+  aura.clearRect(0, 0, w, w);
+  const col = TIER[s - 1];
+  const pulse = 1 + Math.sin(tm * 2.2) * .06;
+  const rad = (96 + 30 * k) * pulse;
+  const g = aura.createRadialGradient(c, c, 40, c, c, rad);
+  if (s === 10) { const h = (tm * 90) % 360; g.addColorStop(0, `hsla(${h},100%,70%,.85)`); g.addColorStop(.6, `hsla(${(h + 120) % 360},100%,60%,.35)`); g.addColorStop(1, 'rgba(255,255,255,0)'); }
+  else { g.addColorStop(0, hexA(col, .15 + .55 * k)); g.addColorStop(.7, hexA(col, .06 + .2 * k)); g.addColorStop(1, hexA(col, 0)); }
+  aura.fillStyle = g; aura.beginPath(); aura.arc(c, c, rad, 0, 7); aura.fill();
+  if (s >= 4) {                                           // 회전 광선
+    const n = 6 + s; aura.save(); aura.translate(c, c); aura.rotate(tm * (.25 + .05 * s));
+    for (let i = 0; i < n; i++) { aura.rotate(Math.PI * 2 / n); aura.fillStyle = s === 10 ? `hsla(${(i * 36 + tm * 120) % 360},100%,70%,.35)` : hexA(col, .18 + .12 * k); aura.beginPath(); aura.moveTo(0, 0); aura.lineTo(-5, -(112 + 8 * Math.sin(tm * 3 + i))); aura.lineTo(5, -(112 + 8 * Math.sin(tm * 3 + i))); aura.fill(); }
+    aura.restore();
+  }
+  if (s >= 7) {                                           // 반짝이
+    for (let i = 0; i < 6 + (s - 7) * 3; i++) { const a = i * 2.4 + tm * .7, r = 100 + 14 * Math.sin(tm * 2 + i), px = c + Math.cos(a) * r, py = c + Math.sin(a) * r, al = .4 + .6 * Math.abs(Math.sin(tm * 3 + i * 1.7)); aura.fillStyle = `rgba(255,255,255,${al})`; aura.fillRect(px - 2, py - 2, 4, 4); }
+  }
+  requestAnimationFrame(drawAura);
+}
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+/* ============ 상태 ============ */
+let db = null, ready = false, NAMES = [], P = {}, me = ls.get('knk_me') || null, ended = null, busy = false;
+const fresh = (hair) => ({ step: 1, energy: MAXE, at: Date.now(), tries: 0, ok: 0, hair: hair || HAIRS[0], pin: '' });
+function norm(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, MAXE, MAXE)), at: num(raw.at, 0, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '' };
+}
+function refill(p) {
+  const now = Date.now();
+  if (p.energy >= MAXE) { p.at = now; return; }
+  const g = Math.floor((now - p.at) / REGEN);
+  if (g > 0) { p.energy = Math.min(MAXE, p.energy + g); p.at = p.energy >= MAXE ? now : p.at + g * REGEN; }
+}
+async function hashPin(n, pin) {
+  const s = n + '|' + pin + '|asgard-knuckle';
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return 'x' + h.toString(16); }
+}
+
+/* ============ 서버 ============ */
+if (firebaseConfig.apiKey.startsWith('YOUR')) setStatus('error', '⚠️ Firebase 설정이 비어 있어요. 코드 위쪽 firebaseConfig를 새 프로젝트 값으로 바꿔주세요.');
+else { try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { setStatus('error', '❌ Firebase 초기화 실패'); } }
+if (db) {
+  const timer = setTimeout(() => { if (!ready) setStatus('error', '❌ 서버 응답이 없어요. (Firebase 규칙/네트워크 확인)'); }, 8000);
+  onValue(ref(db, 'players'), (snap) => {
+    const val = snap.val() || {}, first = !ready;
+    NAMES = Object.keys(val).filter((n) => NAME_RE.test(n) && val[n] && typeof val[n] === 'object');
+    NAMES.forEach((n) => {
+      const q = norm(val[n]) || fresh();
+      if (n === me && !first && P[n] && Date.now() - (P[n]._t || 0) < 1500) return;   // 방금 내가 바꾼 값은 유지
+      if (P[n]) Object.assign(P[n], q); else P[n] = q;                                // 같은 객체에 합쳐서 참조 유지
+    });
+    Object.keys(P).forEach((n) => { if (!NAMES.includes(n)) delete P[n]; });
+    if (first) { ready = true; clearTimeout(timer); setStatus('ok', '✅ 서버와 연결됨 · 자동 저장 중'); setTimeout(startJoin, 0); }
+    render();
+  }, () => setStatus('error', '❌ 데이터 읽기 실패 (Firebase 규칙을 확인하세요)'));
+  onValue(ref(db, 'meta/ended'), (s) => { const was = ended; ended = s.val(); if (ended && !was) showEnd(false); render(); }, () => {});
+  onValue(ref(db, '.info/connected'), (s) => { if (ready) setStatus(s.val() ? 'ok' : '', s.val() ? '✅ 서버와 연결됨 · 자동 저장 중' : '⚠️ 연결이 끊겼어요. 재연결 중...'); });
+}
+function savePart(fields) { if (!db || !ready || !me) return Promise.resolve(false); return update(ref(db, 'players/' + me), fields).then(() => true).catch((e) => { toast('❌ 저장 실패: ' + (e.code || e.message)); return false; }); }
+
+/* ============ 강화 ============ */
+window.enhance = function () {
+  if (!ready || !me || ended || busy || !P[me]) return;
+  const p0 = P[me]; refill(p0);
+  if (p0.step >= 10) return;
+  if (p0.energy < 1) return toast('❤️ 체력이 없어요! 충전되면 다시 도전하세요');
+  busy = true; render();
+  const fr = $('frame'); fr.classList.remove('hit', 'pop', 'charge'); void fr.offsetWidth; fr.classList.add('charge'); Snd.charge();
+  setTimeout(() => {
+    fr.classList.remove('charge');
+    const p = P[me];                                    // 결과를 정하는 순간 항상 최신 내 데이터를 다시 잡는다
+    if (!p || ended) { busy = false; render(); return; }
+    refill(p); if (p.energy < 1) { busy = false; render(); return; }
+    if (p.energy >= MAXE) p.at = Date.now();
+    p.energy -= 1; p.tries++; p._t = Date.now();
+    const from = p.step, win = Math.random() * 100 < RATE[from - 1];
+    if (win) { p.step++; p.ok++; }
+    const to = p.step;
+    $('result').innerHTML = win ? `<b class="ok">✅ 성공!</b> ${STEPS[from - 1].split(' ')[0]} → <b class="ok">${STEPS[to - 1].split(' ')[0]}</b><br>${pick(WIN)}` : `<b class="bad">💨 유지</b> (${STEPS[from - 1].split(' ')[0]})<br>${pick(STAY)}`;
+    void fr.offsetWidth; fr.classList.add(win ? 'pop' : 'hit');
+    if (win) { const pl = $('plus'); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); (to === 10 ? Snd.big : Snd.win)(); } else Snd.stay();
+    busy = false; render();
+    if (to >= 10) finish(p); else savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok });
+  }, 800);
+};
+function finish(p) {
+  const e = { name: me, at: Date.now(), tries: p.tries };
+  const up = { ['players/' + me + '/step']: 10, ['players/' + me + '/energy']: p.energy, ['players/' + me + '/at']: p.at, ['players/' + me + '/tries']: p.tries, ['players/' + me + '/ok']: p.ok, 'meta/ended': e };
+  ended = e; showEnd(true); render();
+  update(ref(db), up).catch((err) => { ended = null; toast('다른 사람이 먼저 데카에 올랐을 수 있어요!'); render(); });
+}
+function showEnd(mine) {
+  if (!ended) return;
+  $('end-title').textContent = mine ? '🏆 데카 달성!!' : '🔒 시즌 종료!';
+  $('end-text').textContent = mine ? `${ended.name}님이 가장 먼저 10단계 데카에 올랐습니다!\n총 ${ended.tries}번의 도전 끝에 완성했어요.\n이번 시즌은 여기서 종료됩니다.` : `${ended.name}님이 ${ended.tries}번 만에 10단계 데카를 완성했어요!\n이번 시즌은 종료되었습니다. 수고하셨습니다 🥊`;
+  $('ending').style.display = 'flex'; Snd.big();
+}
+
+/* ============ 머리색 ============ */
+function buildHair() {
+  const b = $('hair-box'); if (b.dataset.init) return; b.dataset.init = '1';
+  HAIRS.forEach((c) => { const d = document.createElement('div'); d.className = 'sw'; d.style.background = c; d.dataset.c = c; d.onclick = () => setHair(c); b.appendChild(d); });
+  const i = document.createElement('input'); i.type = 'color'; i.id = 'hair-pick'; i.value = HAIRS[0]; i.onchange = () => setHair(i.value); b.appendChild(i);
+}
+function setHair(c) {
+  if (!ready || !me || !P[me] || ended) return;
+  P[me].hair = c; P[me]._t = Date.now(); render(); savePart({ hair: c });
+}
+
+/* ============ 화면 ============ */
+function render() {
+  const p = me && P[me] ? P[me] : null;
+  $('me-name').textContent = p ? me : (me ? me + ' (불러오는 중)' : '-');
+  if (p) { drawFighter($('me-av'), p.hair); $('me-av').classList.add('bob'); }
+  document.querySelectorAll('.sw').forEach((s) => s.classList.toggle('on', p && s.dataset.c.toLowerCase() === p.hair.toLowerCase()));
+  if (p && $('hair-pick')) $('hair-pick').value = p.hair;
+  if (p) refill(p);
+  const step = p ? p.step : 1; curStep = step;
+  document.documentElement.style.setProperty('--tc', TIER[step - 1]);
+  if (render.last !== step) { drawKnuckle(step); render.last = step; }
+  $('stepname').textContent = STEPS[step - 1];
+  $('steplv').textContent = `${step}단계 / 10단계`;
+  const rt = step >= 10 ? '🏆 데카 달성!' : `다음 단계 성공 확률 <b style="color:var(--gold)">${RATE[step - 1]}%</b>`;
+  $('rate').innerHTML = rt;
+  const en = p ? p.energy : 0;
+  $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>`).join('');
+  const ms = p ? Math.max(0, p.at + REGEN - Date.now()) : 0;
+  $('etext').textContent = !p ? '' : `체력 ${en}/${MAXE}` + (en < MAXE ? ` · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}` : ' (가득)');
+  const go = $('go');
+  if (!db) { go.disabled = true; go.textContent = '⚠️ 서버 설정 필요'; }
+  else if (!ready) { go.disabled = true; go.textContent = '⏳ 불러오는 중...'; }
+  else if (!p) { go.disabled = false; go.textContent = '👤 참가하고 시작하기'; go.onclick = () => openJoin(); }
+  else if (ended) { go.disabled = true; go.textContent = '🔒 시즌 종료'; go.onclick = enhance; }
+  else if (step >= 10) { go.disabled = true; go.textContent = '🏆 데카 달성!'; go.onclick = enhance; }
+  else if (busy) { go.disabled = true; go.textContent = '🥊 기를 모으는 중...'; go.onclick = enhance; }
+  else if (p.energy < 1) { go.disabled = true; go.textContent = '❤️ 체력 충전 중...'; go.onclick = enhance; }
+  else { go.disabled = false; go.textContent = '🥊 강화하기! (❤️-1)'; go.onclick = enhance; }
+  $('ladder').innerHTML = STEPS.map((n, i) => `<div class="${i + 1 < step ? 'done' : (i + 1 === step ? 'now' : '')}"><span>${i + 1 < step ? '✔' : (i + 1 === step ? '▶' : '·')} ${i + 1}단계 ${n}</span><small>${i < 9 ? '→ ' + RATE[i] + '%' : '완성'}</small></div>`).join('');
+  $('pcount').textContent = NAMES.length ? `(${NAMES.length}명)` : '';
+  $('players').innerHTML = [...NAMES].sort((a, b) => a.localeCompare(b, 'ko')).map((n) => `<div class="pl ${n === me ? 'mine' : ''}"><img src="${avatarURL(P[n].hair)}" alt=""><span class="nm">${esc(n)}</span><span class="st">${P[n].step}단계 · ${STEPS[P[n].step - 1].split(' ')[0]}</span></div>`).join('') || '<div style="color:var(--dim);font-size:.85rem">아직 참가자가 없어요. 첫 번째 주인공이 되어보세요!</div>';
+  const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
+  if (ended) eb.textContent = `🔒 시즌 종료! ${ended.name}님이 ${ended.tries}번 만에 10단계 데카를 완성했어요 🏆`;
+  const adm = me === ADMIN && p; $('admin').style.display = adm ? 'block' : 'none';
+  if (adm) $('admin-list').innerHTML = NAMES.filter((n) => n !== ADMIN).map((n) => `<div class="arow"><span>${esc(n)} · ${P[n].step}단계 · ${P[n].tries}회${P[n].pin ? '' : ' · 🔓'}</span><span><button class="btn gray" onclick="resetPin('${n}')">비번 초기화</button><button class="btn red" onclick="delPlayer('${n}')">삭제</button></span></div>`).join('') || '<div style="font-size:.8rem;color:var(--dim)">다른 참가자가 없어요</div>';
+}
+setInterval(() => { if (ready) render(); }, 1000);
+buildHair();
+requestAnimationFrame(drawAura);
+drawKnuckle(1);
+
+/* ============ 참가 / 비밀번호 ============ */
+let pinCtx = null;
+function openJoin(msg) {
+  $('join-names').innerHTML = NAMES.map((n) => `<button onclick="pickName('${n}')">${esc(n)} · ${P[n].step}단계</button>`).join('') || '<small style="color:var(--dim)">아직 멤버가 없어요</small>';
+  $('join-err').textContent = msg || ''; $('join-input').value = '';
+  $('join-close').style.display = me && NAMES.includes(me) ? 'block' : 'none';
+  $('join').style.display = 'flex';
+}
+window.openJoin = () => { if (ready) openJoin(); };
+window.closeJoin = () => { $('join').style.display = 'none'; };
+function startJoin() {
+  if (me && NAMES.includes(me)) { const q = P[me]; if (q.pin && ls.get('knk_tok_' + me) === q.pin) return selectMe(me); return window.pickName(me); }
+  openJoin();
+}
+function selectMe(n) { me = n; ls.set('knk_me', n); closeJoin(); render(); }
+window.pickName = (n) => {
+  closeJoin(); const q = P[n]; if (!q) return openJoin();
+  if (q.pin && ls.get('knk_tok_' + n) === q.pin) return selectMe(n);
+  askPin(n, q.pin ? 'check' : 'set');
+};
+window.createName = () => {
+  const v = $('join-input').value.trim();
+  if (!NAME_RE.test(v)) return openJoin('이름은 한글·영문·숫자·_·- 만, 8자 이하로 입력해주세요.');
+  if (NAMES.includes(v)) return openJoin('이미 있는 이름이에요. 위 목록에서 눌러 입장하세요.');
+  if (NAMES.length >= 20) return openJoin('멤버가 가득 찼어요 (최대 20명).');
+  closeJoin(); askPin(v, 'new');
+};
+function askPin(n, mode) {
+  pinCtx = { n, mode }; $('pin-input').value = ''; $('err').textContent = '';
+  $('pin-title').textContent = `「${n}」 ${mode === 'check' ? '비밀번호 입력' : '비밀번호 만들기'}`;
+  $('pin-desc').textContent = mode === 'check' ? '숫자 4자리를 입력하세요' : '숫자 4자리로 정해주세요 (잊으면 운영자가 초기화해줘요)';
+  $('pin').style.display = 'flex'; setTimeout(() => $('pin-input').focus(), 50);
+}
+window.cancelPin = () => { $('pin').style.display = 'none'; pinCtx = null; if (!me || !NAMES.includes(me)) openJoin(); };
+window.submitPin = async () => {
+  const pin = $('pin-input').value.trim(); if (!pinCtx) return;
+  if (!/^\d{4}$/.test(pin)) { $('err').textContent = '숫자 4자리로 입력해주세요'; return; }
+  const { n, mode } = pinCtx, h = await hashPin(n, pin);
+  if (mode === 'check') {
+    if (!P[n] || P[n].pin !== h) { $('err').textContent = '비밀번호가 달라요'; return; }
+  } else {
+    const isNew = !NAMES.includes(n);
+    try {
+      if (isNew) { const f = fresh(); f.pin = h; await set(ref(db, 'players/' + n), f); P[n] = f; if (!NAMES.includes(n)) NAMES.push(n); }
+      else { await update(ref(db, 'players/' + n), { pin: h }); P[n].pin = h; }
+    } catch (e) { $('err').textContent = '저장 실패: ' + (e.code || e.message); return; }
+  }
+  ls.set('knk_tok_' + n, h); $('pin').style.display = 'none'; pinCtx = null; selectMe(n);
+  if (mode !== 'check') toast('🥊 환영해요, ' + n + '님!');
+};
+
+/* ============ 운영자 ============ */
+window.resetPin = (n) => { if (me !== ADMIN || !confirm(`'${n}'님의 비밀번호를 초기화할까요?`)) return; update(ref(db, 'players/' + n), { pin: null }).then(() => toast(`'${n}' 비밀번호 초기화 완료 (다음 입장 때 새로 설정)`)).catch((e) => toast('❌ ' + (e.code || e.message))); };
+window.delPlayer = (n) => { if (me !== ADMIN || !confirm(`'${n}' 캐릭터를 삭제할까요? 되돌릴 수 없어요.`)) return; remove(ref(db, 'players/' + n)).then(() => toast(`'${n}' 삭제됨`)).catch((e) => toast('❌ ' + (e.code || e.message))); };
+window.backupData = () => {
+  if (me !== ADMIN) return;
+  const data = { exported: new Date().toISOString(), ended, players: {} }; NAMES.forEach((n) => { const { _t, ...rest } = P[n]; data.players[n] = rest; });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  a.download = `knuckle-backup-${new Date().toISOString().slice(0, 10)}.json`; document.body.appendChild(a); a.click(); a.remove(); toast('💾 백업 파일을 저장했어요');
+};
+</script>
+</body>
+</html>
