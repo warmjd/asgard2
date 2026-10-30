@@ -194,6 +194,7 @@ header { position:relative; }
   <div class="agrant"><select id="g-who"></select><input id="g-amt" type="number" value="5" min="1" max="100"><button class="btn green" onclick="grant()">체력 지급</button></div>
   <button class="btn" style="width:100%;margin-bottom:10px" onclick="grantAll()">🎁 전원에게 지급</button>
   <div class="agrant"><span style="flex:1;align-self:center;font-size:.8rem;color:var(--dim)">위에서 고른 사람의 단계를 직접 지정 (1~10)</span><input id="s-step" type="number" value="1" min="1" max="10"><button class="btn" onclick="setStep()">단계 지정</button></div>
+  <div id="admsg" style="font-size:.8rem;color:var(--ok);min-height:20px;margin-bottom:6px"></div>
   <div id="admin-list"></div>
   <button class="btn green" style="width:100%;margin-top:8px" onclick="backupData()">💾 데이터 백업 다운로드</button>
 </div>
@@ -579,13 +580,13 @@ window.grant = () => {
   if (me !== ADMIN) return; const who = $('g-who').value, amt = Math.floor(Number($('g-amt').value));
   if (!NAMES.includes(who) || !(amt >= 1 && amt <= 100)) return toast('받는 사람과 1~100 사이 수를 확인해주세요');
   if (!confirm(`'${who}'님에게 체력 ${amt}개를 지급할까요?`)) return;
-  const [k, v] = giftTo(who, amt, '운영자 지급'); update(ref(db), { [k]: v }).then(() => toast(`🎁 ${who}님에게 체력 +${amt} 지급 (접속 중이면 바로 반영)`)).catch((e) => toast('❌ ' + (e.code || e.message)));
+  const [k, v] = giftTo(who, amt, '운영자 지급'); update(ref(db), { [k]: v }).then(() => { toast(`🎁 ${who}님에게 체력 +${amt} 지급 (접속 중이면 바로 반영)`); $('admsg').textContent = `🎁 ${new Date().toLocaleTimeString('ko-KR')} · ${who}님에게 체력 +${amt} 지급했어요`; }).catch((e) => toast('❌ ' + (e.code || e.message)));
 };
 window.setStep = () => {
   if (me !== ADMIN) return; const who = $('g-who').value, st = Math.floor(Number($('s-step').value));
   if (!NAMES.includes(who) || !(st >= 1 && st <= 10)) return toast('받는 사람과 1~10 사이 단계를 확인해주세요');
   if (!confirm(`'${who}'님의 단계를 ${st}단계(${short(st)})로 바꿀까요?` + (st === 10 ? '\n(10단계로 지정해도 시즌 종료는 일어나지 않아요)' : ''))) return;
-  update(ref(db, 'players/' + who), { step: st }).then(() => { if (P[who]) P[who].step = st; toast(`✅ ${who}님 → ${st}단계`); render(); }).catch((e) => toast('❌ ' + (e.code || e.message)));
+  update(ref(db, 'players/' + who), { step: st }).then(() => { if (P[who]) P[who].step = st; toast(`✅ ${who}님 → ${st}단계`); $('admsg').textContent = `✅ ${new Date().toLocaleTimeString('ko-KR')} · ${who}님을 ${st}단계(${short(st)})로 지정했어요`; render(); }).catch((e) => toast('❌ ' + (e.code || e.message)));
 };
 window.grantAll = () => {
   if (me !== ADMIN) return; const amt = Math.floor(Number($('g-amt').value));
