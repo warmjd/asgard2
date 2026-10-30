@@ -125,7 +125,7 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
 
 <header>
   <button id="snd" onclick="toggleSnd()">🔊</button>
-  <h1 id="title-egg" style="user-select:none;-webkit-user-select:none">🥊 익스트림 너클</h1>
+  <h1 id="title-egg" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:pointer">🥊 익스트림 너클</h1>
   <div class="sub">아스가르드 · 강화 시뮬레이터</div>
 </header>
 
@@ -355,11 +355,14 @@ function norm(raw) {
   if (!raw || typeof raw !== 'object') return null;
   return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', egg: raw.egg === 1, att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
 }
+let CHASE = new Set();                                    // 🚀 추격 모드: 순위 하위 30%(운영자 제외)는 충전 2배
+function calcChase() { const r = NAMES.filter((n) => n !== ADMIN && P[n]).sort(rankKey); CHASE = new Set(r.length >= 2 ? r.slice(r.length - Math.max(1, Math.round(r.length * 0.3))) : []); }
+const regenIv = () => REGEN / (CHASE.has(me) ? 2 : 1);
 function refill(p) {
-  const now = Date.now();
-  if (p.energy >= MAXE) { p.at = now; return; }          // 10개 이상이면 더 충전되지 않음
-  const g = Math.floor((now - p.at) / REGEN);
-  if (g > 0) { p.energy = Math.min(MAXE, p.energy + g); p.at = p.energy >= MAXE ? now : p.at + g * REGEN; }
+  const now = Date.now(), iv = regenIv();
+  if (p.energy >= MAXE) { p.at = now; return; }          // 가득 차면 더 충전되지 않음
+  const g = Math.floor((now - p.at) / iv);
+  if (g > 0) { p.energy = Math.min(MAXE, p.energy + g); p.at = p.energy >= MAXE ? now : p.at + g * iv; }
 }
 const rankKey = (a, b) => (P[b].step - P[a].step) || (P[a].tries - P[b].tries) || a.localeCompare(b, 'ko');
 async function hashPin(n, pin) {
@@ -425,7 +428,7 @@ function finish(p) {
 /* ============ 🥚 이스터에그: 제목을 빠르게 7번 ============ */
 let eggTaps = [];
 $('title-egg').addEventListener('click', () => {
-  const t = Date.now(); eggTaps = eggTaps.filter((x) => t - x < 2500); eggTaps.push(t);
+  const t = Date.now(); eggTaps = eggTaps.filter((x) => t - x < 4000); eggTaps.push(t);
   if (eggTaps.length < 7) return; eggTaps = [];
   document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); Snd.big();
   for (let i = 0; i < 28; i++) { const c = document.createElement('div'); c.className = 'cf'; c.textContent = pick(['🥊', '✨', '💥', '⭐', '🔥']); c.style.left = Math.random() * 96 + 'vw'; c.style.fontSize = 18 + Math.random() * 20 + 'px'; c.style.animationDelay = Math.random() * .9 + 's'; document.body.appendChild(c); setTimeout(() => c.remove(), 3600); }
@@ -496,6 +499,8 @@ function render() {
   if (p) { drawFighter($('me-av'), p.hair); $('me-av').classList.add('bob'); }
   document.querySelectorAll('.sw').forEach((s) => s.classList.toggle('on', p && s.dataset.c.toLowerCase() === p.hair.toLowerCase()));
   if (p && $('hair-pick')) $('hair-pick').value = p.hair;
+  calcChase();
+  calcChase();
   if (p) refill(p);
   const step = p ? p.step : 1; curStep = step;
   document.documentElement.style.setProperty('--tc', TIER[step - 1]);
@@ -505,8 +510,9 @@ function render() {
   $('rate').innerHTML = step >= 10 ? '🏆 데카 달성!' : `다음 단계 성공 확률 <b style="color:var(--gold)">${RATE[step - 1]}%</b>`;
   const en = p ? p.energy : 0;
   $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>${(i + 1) % 10 === 0 && i + 1 < MAXE ? '<br>' : ''}`).join('') + (en > MAXE ? `<span class="more">+${en - MAXE}</span>` : '');
-  const ms = p ? Math.max(0, p.at + REGEN - Date.now()) : 0;
-  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
+  const ms = p ? Math.max(0, p.at + regenIv() - Date.now()) : 0, chase = p && CHASE.has(me);
+  if (ready && chase && !render.cw) { render.cw = true; toast('🚀 추격 모드 발동! 체력 충전이 2배로 빨라졌어요 (비밀이에요 🤫)'); Snd.win(); } else if (!chase) render.cw = false;
+  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${chase ? ' 🚀추격 2배' : ''}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
   const go = $('go');
   if (!db) { go.disabled = true; go.textContent = '⚠️ 서버 설정 필요'; }
   else if (!ready) { go.disabled = true; go.textContent = '⏳ 불러오는 중...'; }
