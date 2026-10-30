@@ -182,7 +182,7 @@ header { position:relative; }
   <div class="title">📜 규칙</div>
   <ul>
     <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 10개까지 충전돼요. (이벤트로 받은 체력은 10개를 넘어도 보관돼요)</li>
-    <li>매일 첫 접속 <b>출석 보너스 +5</b>! 하루 한 명에게는 <b>꼴찌 지원금 +20</b>, 또 한 명에게는 <b>랜덤 행운 +20</b>이 지급돼요. (0시 기준)</li>
+    <li>매일 첫 접속 <b>출석 보너스 +5</b>! 하루 한 명에게는 <b>꼴찌 지원금 +20</b>, 또 한 명에게는 <b>랜덤 행운 +20</b>이 지급돼요. 단, 어제나 오늘 출석한 사람만 대상이에요. (0시 기준)</li>
     <li>결과는 <b>성공(한 단계 상승)</b> 아니면 <b>유지</b>, 둘 중 하나예요. 파괴도 하락도 없습니다.</li>
     <li>위 단계로 갈수록 성공 확률이 크게 낮아집니다. 실패가 쌓여도 확률은 오르지 않아요.</li>
     <li>가장 먼저 <b>10단계 데카</b>에 오르는 사람이 나오면 그 즉시 시즌이 종료됩니다!</li>
@@ -248,6 +248,7 @@ const STEPS = ['모노 (Mono)', '다이 (Di)', '트라이 (Tri)', '테트라 (Te
 const TIER = ['#9aa0a6', '#c47a3d', '#cfd6df', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#ff922b', '#ffffff'];
 const HAIRS = ['#6b4a2b', '#2b2b3a', '#e8c15a', '#d6336c', '#a56cc1', '#4dabf7', '#38d9a9', '#e8590c', '#f1f3f5', '#c92a2a'];
 const short = (n) => STEPS[n - 1].split(' ')[0];
+const kstYesterday = () => new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10);
 const kstDate = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜 (0시 기준)
 const WIN = ['너클이 번쩍이며 한 단계 진화했다!', '주먹에 기운이 모이더니 단단하게 변했다!', '오오, 손맛이 확 달라졌다. 성공!', '너클이 금빛을 내뿜었다!', '꽉 쥔 주먹 안에서 빛이 터졌다!'];
 const STAY = ['너클이 잠잠하다… 변화는 없었다.', '기운이 흩어졌다. 그대로다.', '아쉽다. 다시 한 번!', '조금만 더… 아직 때가 아닌가 보다.', '주먹을 쥐었다 폈다. 변화 없음.'];
@@ -437,9 +438,9 @@ function applyGifts() {                                  // 받은 선물(운영
   Snd.big(); toast('🎁 ' + why.join(' · ')); render();
 }
 function tryDraw() {                                      // 오늘 첫 접속자가 꼴찌 지원금·행운 추첨을 한 번만 기록한다
-  if (!ready || !dailyReady || ended || !NAMES.length) return;
+  if (!ready || !dailyReady || ended || !NAMES.length || !me || !P[me] || P[me].att !== kstDate()) return;   // 오늘 출석을 마친 접속자만 추첨 (본인도 후보에 포함)
   const d = kstDate(); if (DAILY[d]) return;
-  const pool = NAMES.filter((n) => n !== ADMIN); if (!pool.length) return;
+  const yd = kstYesterday(), pool = NAMES.filter((n) => n !== ADMIN && P[n].att && P[n].att >= yd); if (!pool.length) return;   // 어제·오늘 출석한 사람만 대상
   const low = Math.min(...pool.map((n) => P[n].step)), lows = pool.filter((n) => P[n].step === low);
   const last = pick(lows), rest = pool.filter((n) => n !== last), lucky = rest.length ? pick(rest) : null;
   const t = Date.now(), up = { ['meta/daily/' + d]: { last, lucky: lucky || '', at: t } };
@@ -506,7 +507,7 @@ function render() {
   const tt = NAMES.reduce((a, n) => a + P[n].tries, 0);
   $('totals').textContent = NAMES.length ? `전체 ${tt.toLocaleString('ko-KR')}회 시도` : '';
   const dd = DAILY[kstDate()], att = p && p.att === kstDate();
-  $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 운영자는 순위·추첨에서 제외</span>';
+  $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 어제·오늘 출석한 사람만 대상 · 운영자 제외</span>';
   const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
   if (ended) eb.textContent = `🔒 시즌 종료! ${ended.name}님이 ${ended.tries}번 만에 10단계 데카를 완성했어요 🏆`;
   const adm = me === ADMIN && p; $('admin').style.display = adm ? 'block' : 'none';
