@@ -193,6 +193,7 @@ header { position:relative; }
   <div class="title">🛠 운영자</div>
   <div class="agrant"><select id="g-who"></select><input id="g-amt" type="number" value="5" min="1" max="100"><button class="btn green" onclick="grant()">체력 지급</button></div>
   <button class="btn" style="width:100%;margin-bottom:10px" onclick="grantAll()">🎁 전원에게 지급</button>
+  <div class="agrant"><span style="flex:1;align-self:center;font-size:.8rem;color:var(--dim)">위에서 고른 사람의 단계를 직접 지정 (1~10)</span><input id="s-step" type="number" value="1" min="1" max="10"><button class="btn" onclick="setStep()">단계 지정</button></div>
   <div id="admin-list"></div>
   <button class="btn green" style="width:100%;margin-top:8px" onclick="backupData()">💾 데이터 백업 다운로드</button>
 </div>
@@ -496,15 +497,15 @@ function render() {
   else if (p.energy < 1) { go.disabled = true; go.textContent = '❤️ 체력 충전 중...'; go.onclick = enhance; }
   else { go.disabled = false; go.textContent = '🥊 강화하기! (❤️-1)'; go.onclick = enhance; }
   $('ladder').innerHTML = STEPS.map((n, i) => `<div class="${i + 1 < step ? 'done' : (i + 1 === step ? 'now' : '')}"><span>${i + 1 < step ? '✔' : (i + 1 === step ? '▶' : '·')} ${i + 1}단계 ${n}</span><small>${i < 9 ? '→ ' + RATE[i] + '%' : '완성'}</small></div>`).join('');
-  const order = [...NAMES].sort(rankKey), tries = (n) => P[n].tries.toLocaleString('ko-KR');
+  const ranked = NAMES.filter((n) => n !== ADMIN).sort(rankKey), order = NAMES.includes(ADMIN) ? [...ranked, ADMIN] : ranked, tries = (n) => P[n].tries.toLocaleString('ko-KR');
   $('pcount').textContent = NAMES.length ? `(${NAMES.length}명)` : '';
-  $('players').innerHTML = order.map((n, i) => `<div class="pl ${n === me ? 'mine' : ''}"><span class="rk">${i + 1}</span><img src="${avatarURL(P[n].hair)}" alt=""><span class="nm">${esc(n)}<br><small style="color:var(--dim)">시도 ${tries(n)}회 · 성공 ${P[n].ok}회</small></span><span class="st">${P[n].step}단계<br><small>${short(P[n].step)}</small></span></div>`).join('') || '<div style="color:var(--dim);font-size:.85rem">아직 참가자가 없어요. 첫 번째 주인공이 되어보세요!</div>';
-  const top = order.filter((n) => P[n].tries > 0).slice(0, 3), slot = (k, cls, medal) => { const n = top[k]; return n ? `<div class="pcol ${cls} ${n === me ? 'mine' : ''}"><div class="who">${k === 0 ? '<div class="crown">👑</div>' : ''}<img src="${avatarURL(P[n].hair)}" alt=""><div class="pn">${esc(n)}</div><div class="ps">${P[n].step}단계 ${short(P[n].step)}<br>시도 ${tries(n)}회</div></div><div class="block">${medal}</div></div>` : `<div class="pcol ${cls} empty"><div class="who"><img src="${avatarURL('#555555')}" alt=""><div class="pn">-</div><div class="ps">비어 있음</div></div><div class="block">${medal}</div></div>`; };
+  $('players').innerHTML = order.map((n, i) => `<div class="pl ${n === me ? 'mine' : ''}"><span class="rk">${n === ADMIN ? '운영' : i + 1}</span><img src="${avatarURL(P[n].hair)}" alt=""><span class="nm">${esc(n)}<br><small style="color:var(--dim)">시도 ${tries(n)}회 · 성공 ${P[n].ok}회</small></span><span class="st">${P[n].step}단계<br><small>${short(P[n].step)}</small></span></div>`).join('') || '<div style="color:var(--dim);font-size:.85rem">아직 참가자가 없어요. 첫 번째 주인공이 되어보세요!</div>';
+  const top = ranked.filter((n) => P[n].tries > 0).slice(0, 3), slot = (k, cls, medal) => { const n = top[k]; return n ? `<div class="pcol ${cls} ${n === me ? 'mine' : ''}"><div class="who">${k === 0 ? '<div class="crown">👑</div>' : ''}<img src="${avatarURL(P[n].hair)}" alt=""><div class="pn">${esc(n)}</div><div class="ps">${P[n].step}단계 ${short(P[n].step)}<br>시도 ${tries(n)}회</div></div><div class="block">${medal}</div></div>` : `<div class="pcol ${cls} empty"><div class="who"><img src="${avatarURL('#555555')}" alt=""><div class="pn">-</div><div class="ps">비어 있음</div></div><div class="block">${medal}</div></div>`; };
   $('podium').innerHTML = slot(1, 'r2', '🥈') + slot(0, 'r1', '🥇') + slot(2, 'r3', '🥉');
   const tt = NAMES.reduce((a, n) => a + P[n].tries, 0);
   $('totals').textContent = NAMES.length ? `전체 ${tt.toLocaleString('ko-KR')}회 시도` : '';
   const dd = DAILY[kstDate()], att = p && p.att === kstDate();
-  $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 운영자는 제외</span>';
+  $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 운영자는 순위·추첨에서 제외</span>';
   const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
   if (ended) eb.textContent = `🔒 시즌 종료! ${ended.name}님이 ${ended.tries}번 만에 10단계 데카를 완성했어요 🏆`;
   const adm = me === ADMIN && p; $('admin').style.display = adm ? 'block' : 'none';
@@ -579,6 +580,12 @@ window.grant = () => {
   if (!NAMES.includes(who) || !(amt >= 1 && amt <= 100)) return toast('받는 사람과 1~100 사이 수를 확인해주세요');
   if (!confirm(`'${who}'님에게 체력 ${amt}개를 지급할까요?`)) return;
   const [k, v] = giftTo(who, amt, '운영자 지급'); update(ref(db), { [k]: v }).then(() => toast(`🎁 ${who}님에게 체력 +${amt} 지급 (접속 중이면 바로 반영)`)).catch((e) => toast('❌ ' + (e.code || e.message)));
+};
+window.setStep = () => {
+  if (me !== ADMIN) return; const who = $('g-who').value, st = Math.floor(Number($('s-step').value));
+  if (!NAMES.includes(who) || !(st >= 1 && st <= 10)) return toast('받는 사람과 1~10 사이 단계를 확인해주세요');
+  if (!confirm(`'${who}'님의 단계를 ${st}단계(${short(st)})로 바꿀까요?` + (st === 10 ? '\n(10단계로 지정해도 시즌 종료는 일어나지 않아요)' : ''))) return;
+  update(ref(db, 'players/' + who), { step: st }).then(() => { if (P[who]) P[who].step = st; toast(`✅ ${who}님 → ${st}단계`); render(); }).catch((e) => toast('❌ ' + (e.code || e.message)));
 };
 window.grantAll = () => {
   if (me !== ADMIN) return; const amt = Math.floor(Number($('g-amt').value));
