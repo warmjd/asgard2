@@ -59,6 +59,35 @@ header { position:relative; }
 .plus { position:absolute; left:50%; top:30%; transform:translateX(-50%); font-size:1.6rem; color:var(--ok); text-shadow:2px 2px 0 #000; pointer-events:none; opacity:0; }
 .plus.go { animation:plus 1.2s ease-out; } @keyframes plus { 0% { opacity:0; transform:translate(-50%,10px); } 20% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50px); } }
 
+/* 골드 */
+.gold { text-align:center; font-size:1.35rem; color:#ffd43b; text-shadow:2px 2px 0 #000; margin:8px 0 2px; }
+#gsub { text-align:center; font-size:.78rem; color:var(--dim); line-height:1.6; margin-bottom:8px; }
+#gsub b { color:#e9ecf5; }
+#auto { width:100%; margin-top:8px; padding:10px; font-size:.95rem; background:#7048e8; }
+#auto.on { background:#c92a2a; }
+/* 시상대 */
+.podium { display:flex; align-items:flex-end; justify-content:center; gap:6px; margin:6px 0 4px; min-height:200px; }
+.pcol { flex:1; max-width:112px; text-align:center; }
+.pcol .who { min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+.pcol img { width:42px; height:52px; image-rendering:pixelated; background:var(--panel2); border:2px solid var(--line); }
+.pcol .crown { font-size:1.3rem; animation:bob 1.6s ease-in-out infinite; }
+.pcol .pn { font-size:.82rem; margin-top:3px; word-break:break-all; line-height:1.2; }
+.pcol .ps { font-size:.7rem; color:var(--dim); margin-bottom:3px; line-height:1.3; }
+.block { border:3px solid #000; display:flex; align-items:center; justify-content:center; font-size:1.7rem; font-weight:bold; color:#000; text-shadow:1px 1px 0 rgba(255,255,255,.4); box-shadow:inset 4px 4px 0 rgba(255,255,255,.35), inset -4px -4px 0 rgba(0,0,0,.25); }
+.r1 .block { height:92px; background:linear-gradient(#ffe066,#e8a800); }
+.r2 .block { height:66px; background:linear-gradient(#e9ecef,#9aa0a6); }
+.r3 .block { height:48px; background:linear-gradient(#e8a96a,#a8642a); }
+.pcol.empty img { opacity:.25; filter:grayscale(1); }
+.pcol.mine .pn { color:var(--gold); }
+.rk { width:22px; text-align:center; color:var(--dim); font-size:.8rem; }
+/* 지원 / 운영자 */
+.dl { font-size:.85rem; line-height:1.9; }
+.dl b { color:var(--gold); }
+.dl .got { color:var(--ok); }
+.agrant { display:flex; gap:6px; margin-bottom:6px; }
+.agrant select, .agrant input { font-family:inherit; background:var(--panel2); color:#fff; border:2px solid var(--line); padding:8px; font-size:.9rem; }
+.agrant select { flex:1; min-width:0; } .agrant input { width:64px; text-align:center; }
+.hearts .more { font-size:.85rem; color:var(--gold); margin-left:4px; vertical-align:middle; }
 /* 사다리 */
 .ladder div { display:flex; justify-content:space-between; padding:5px 8px; border:2px solid transparent; font-size:.85rem; color:var(--dim); }
 .ladder div.done { color:#b9c0e0; } .ladder div.now { color:#fff; border-color:var(--gold); background:rgba(255,212,59,.08); }
@@ -129,19 +158,31 @@ header { position:relative; }
 </div>
 
 <div class="card">
+  <div class="title">🎁 오늘의 체력 지원</div>
+  <div class="dl" id="daily">불러오는 중...</div>
+</div>
+
+<div class="card">
+  <div class="title">🏅 현재 순위 TOP 3 <span style="color:var(--dim);font-size:.72rem">단계↑ · 같으면 시도 적은 순</span></div>
+  <div class="podium" id="podium"></div>
+  <div id="totals" style="text-align:center;font-size:.75rem;color:var(--dim)"></div>
+</div>
+
+<div class="card">
   <div class="title">📊 강화 단계 · 성공 확률</div>
   <div class="ladder" id="ladder"></div>
 </div>
 
 <div class="card">
-  <div class="title">👥 참가자 <span id="pcount" style="color:var(--dim);font-size:.78rem"></span></div>
+  <div class="title">👥 참가자 · 시도 현황 <span id="pcount" style="color:var(--dim);font-size:.78rem"></span></div>
   <div id="players"></div>
 </div>
 
 <div class="card rules">
   <div class="title">📜 규칙</div>
   <ul>
-    <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 최대 10개까지 모아둘 수 있어요.</li>
+    <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 10개까지 충전돼요. (이벤트로 받은 체력은 10개를 넘어도 보관돼요)</li>
+    <li>매일 첫 접속 <b>출석 보너스 +5</b>! 하루 한 명에게는 <b>꼴찌 지원금 +20</b>, 또 한 명에게는 <b>랜덤 행운 +20</b>이 지급돼요. (0시 기준)</li>
     <li>결과는 <b>성공(한 단계 상승)</b> 아니면 <b>유지</b>, 둘 중 하나예요. 파괴도 하락도 없습니다.</li>
     <li>위 단계로 갈수록 성공 확률이 크게 낮아집니다. 실패가 쌓여도 확률은 오르지 않아요.</li>
     <li>가장 먼저 <b>10단계 데카</b>에 오르는 사람이 나오면 그 즉시 시즌이 종료됩니다!</li>
@@ -150,6 +191,8 @@ header { position:relative; }
 
 <div class="card" id="admin" style="display:none">
   <div class="title">🛠 운영자</div>
+  <div class="agrant"><select id="g-who"></select><input id="g-amt" type="number" value="5" min="1" max="100"><button class="btn green" onclick="grant()">체력 지급</button></div>
+  <button class="btn" style="width:100%;margin-bottom:10px" onclick="grantAll()">🎁 전원에게 지급</button>
   <div id="admin-list"></div>
   <button class="btn green" style="width:100%;margin-top:8px" onclick="backupData()">💾 데이터 백업 다운로드</button>
 </div>
@@ -195,12 +238,15 @@ const firebaseConfig = {
   appId: "1:533089313687:web:c546ea2582e67db78c5ad2"
 };
 const ADMIN = '조돌맹';                         // 운영자 닉네임 (비번 초기화·삭제·백업 가능)
-const MAXE = 10, REGEN = 20 * 60 * 1000;       // 체력: 최대 10, 20분마다 +1
+const MAXE = 10, ECAP = 100, REGEN = 20 * 60 * 1000;   // 체력: 20분마다 +1 (10개까지 충전), 이벤트 보너스는 최대 100까지 보관
+const ATT_BONUS = 5, LAST_BONUS = 20, LUCKY_BONUS = 20;   // 출석 +5, 꼴찌 지원금 +20, 랜덤 행운 +20
 // 각 단계에서 다음 단계로 올라갈 성공 확률(%). 모노→다이 … 노나→데카 (한 달 기준)
 const RATE = [6.6, 5.5, 4.4, 3.3, 2.2, 1.32, 0.88, 0.55, 0.33];
 const STEPS = ['모노 (Mono)', '다이 (Di)', '트라이 (Tri)', '테트라 (Tetra)', '펜타 (Penta)', '헥사 (Hexa)', '헵타 (Hepta)', '옥타 (Octa)', '노나 (Nona)', '데카 (Deca)'];
 const TIER = ['#9aa0a6', '#c47a3d', '#cfd6df', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#ff922b', '#ffffff'];
 const HAIRS = ['#6b4a2b', '#2b2b3a', '#e8c15a', '#d6336c', '#a56cc1', '#4dabf7', '#38d9a9', '#e8590c', '#f1f3f5', '#c92a2a'];
+const short = (n) => STEPS[n - 1].split(' ')[0];
+const kstDate = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜 (0시 기준)
 const WIN = ['너클이 번쩍이며 한 단계 진화했다!', '주먹에 기운이 모이더니 단단하게 변했다!', '오오, 손맛이 확 달라졌다. 성공!', '너클이 금빛을 내뿜었다!', '꽉 쥔 주먹 안에서 빛이 터졌다!'];
 const STAY = ['너클이 잠잠하다… 변화는 없었다.', '기운이 흩어졌다. 그대로다.', '아쉽다. 다시 한 번!', '조금만 더… 아직 때가 아닌가 보다.', '주먹을 쥐었다 폈다. 변화 없음.'];
 
@@ -295,18 +341,20 @@ function drawAura(ts) {
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
 
 /* ============ 상태 ============ */
+let DAILY = {}, dailyReady = false, applied = new Set();
 let db = null, ready = false, NAMES = [], P = {}, me = ls.get('knk_me') || null, ended = null, busy = false;
 const fresh = (hair) => ({ step: 1, energy: MAXE, at: Date.now(), tries: 0, ok: 0, hair: hair || HAIRS[0], pin: '' });
 function norm(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, MAXE, MAXE)), at: num(raw.at, 0, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '' };
+  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
 }
 function refill(p) {
   const now = Date.now();
-  if (p.energy >= MAXE) { p.at = now; return; }
+  if (p.energy >= MAXE) { p.at = now; return; }          // 10개 이상이면 더 충전되지 않음
   const g = Math.floor((now - p.at) / REGEN);
   if (g > 0) { p.energy = Math.min(MAXE, p.energy + g); p.at = p.energy >= MAXE ? now : p.at + g * REGEN; }
 }
+const rankKey = (a, b) => (P[b].step - P[a].step) || (P[a].tries - P[b].tries) || a.localeCompare(b, 'ko');
 async function hashPin(n, pin) {
   const s = n + '|' + pin + '|asgard-knuckle';
   try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
@@ -323,13 +371,14 @@ if (db) {
     NAMES = Object.keys(val).filter((n) => NAME_RE.test(n) && val[n] && typeof val[n] === 'object');
     NAMES.forEach((n) => {
       const q = norm(val[n]) || fresh();
-      if (n === me && !first && P[n] && Date.now() - (P[n]._t || 0) < 1500) return;   // 방금 내가 바꾼 값은 유지
+      if (n === me && !first && P[n] && Date.now() - (P[n]._t || 0) < 1500) { P[n].gifts = q.gifts; return; }   // 방금 내가 바꾼 값은 유지(선물만 반영)
       if (P[n]) Object.assign(P[n], q); else P[n] = q;                                // 같은 객체에 합쳐서 참조 유지
     });
     Object.keys(P).forEach((n) => { if (!NAMES.includes(n)) delete P[n]; });
-    if (first) { ready = true; clearTimeout(timer); setStatus('ok', '✅ 서버와 연결됨 · 자동 저장 중'); setTimeout(startJoin, 0); }
+    if (first) { ready = true; clearTimeout(timer); setStatus('ok', '✅ 서버와 연결됨 · 자동 저장 중'); setTimeout(startJoin, 0); setTimeout(tick, 400); }
     render();
   }, () => setStatus('error', '❌ 데이터 읽기 실패 (Firebase 규칙을 확인하세요)'));
+  onValue(ref(db, 'meta/daily'), (s) => { DAILY = s.val() || {}; dailyReady = true; tick(); render(); }, () => { dailyReady = true; });
   onValue(ref(db, 'meta/ended'), (s) => { const was = ended; ended = s.val(); if (ended && !was) showEnd(false); render(); }, () => {});
   onValue(ref(db, '.info/connected'), (s) => { if (ready) setStatus(s.val() ? 'ok' : '', s.val() ? '✅ 서버와 연결됨 · 자동 저장 중' : '⚠️ 연결이 끊겼어요. 재연결 중...'); });
 }
@@ -348,17 +397,16 @@ window.enhance = function () {
     const p = P[me];                                    // 결과를 정하는 순간 항상 최신 내 데이터를 다시 잡는다
     if (!p || ended) { busy = false; render(); return; }
     refill(p); if (p.energy < 1) { busy = false; render(); return; }
-    if (p.energy >= MAXE) p.at = Date.now();
     p.energy -= 1; p.tries++; p._t = Date.now();
     const from = p.step, win = Math.random() * 100 < RATE[from - 1];
     if (win) { p.step++; p.ok++; }
     const to = p.step;
-    $('result').innerHTML = win ? `<b class="ok">✅ 성공!</b> ${STEPS[from - 1].split(' ')[0]} → <b class="ok">${STEPS[to - 1].split(' ')[0]}</b><br>${pick(WIN)}` : `<b class="bad">💨 유지</b> (${STEPS[from - 1].split(' ')[0]})<br>${pick(STAY)}`;
+    $('result').innerHTML = win ? `<b class="ok">✅ 성공!</b> ${short(from)} → <b class="ok">${short(to)}</b><br>${pick(WIN)}` : `<b class="bad">💨 유지</b> (${short(from)})<br>${pick(STAY)}`;
     void fr.offsetWidth; fr.classList.add(win ? 'pop' : 'hit');
     if (win) { const pl = $('plus'); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); (to === 10 ? Snd.big : Snd.win)(); } else Snd.stay();
     busy = false; render();
     if (to >= 10) finish(p); else savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok });
-  }, 800);
+  }, 700);
 };
 function finish(p) {
   const e = { name: me, at: Date.now(), tries: p.tries };
@@ -366,6 +414,42 @@ function finish(p) {
   ended = e; showEnd(true); render();
   update(ref(db), up).catch((err) => { ended = null; toast('다른 사람이 먼저 데카에 올랐을 수 있어요!'); render(); });
 }
+
+/* ============ 출석 · 선물 · 하루 추첨 ============ */
+function claimAttendance() {
+  const p = P[me], d = kstDate();
+  if (!p || ended || p.att === d) return;
+  refill(p); p.energy = Math.min(ECAP, p.energy + ATT_BONUS); p.att = d; p._t = Date.now();
+  savePart({ energy: p.energy, at: p.at, att: d }); Snd.win(); toast(`📅 출석 보너스! 체력 +${ATT_BONUS}`); render();
+}
+function applyGifts() {                                  // 받은 선물(운영자 지급·꼴찌 지원금·행운)을 내 체력에 넣고 지운다
+  const p = P[me]; if (!p || ended) return;
+  const ids = Object.keys(p.gifts || {}).filter((id) => !applied.has(id) && p.gifts[id] && Number(p.gifts[id].amt) > 0);
+  if (!ids.length) return;
+  let sum = 0; const up = {}, why = [];
+  ids.forEach((id) => { applied.add(id); const a = Math.min(100, Math.floor(Number(p.gifts[id].amt))); sum += a; why.push(`${String(p.gifts[id].why || '선물').slice(0, 20)} +${a}`); up['players/' + me + '/gifts/' + id] = null; });
+  refill(p); p.energy = Math.min(ECAP, p.energy + sum); p._t = Date.now();
+  ids.forEach((id) => delete p.gifts[id]);
+  up['players/' + me + '/energy'] = p.energy; up['players/' + me + '/at'] = p.at;
+  update(ref(db), up).catch((e) => toast('❌ 선물 저장 실패'));
+  Snd.big(); toast('🎁 ' + why.join(' · ')); render();
+}
+function tryDraw() {                                      // 오늘 첫 접속자가 꼴찌 지원금·행운 추첨을 한 번만 기록한다
+  if (!ready || !dailyReady || ended || !NAMES.length) return;
+  const d = kstDate(); if (DAILY[d]) return;
+  const pool = NAMES.filter((n) => n !== ADMIN); if (!pool.length) return;
+  const low = Math.min(...pool.map((n) => P[n].step)), lows = pool.filter((n) => P[n].step === low);
+  const last = pick(lows), rest = pool.filter((n) => n !== last), lucky = rest.length ? pick(rest) : null;
+  const t = Date.now(), up = { ['meta/daily/' + d]: { last, lucky: lucky || '', at: t } };
+  up['players/' + last + '/gifts/d' + d + 'L'] = { amt: LAST_BONUS, why: '꼴찌 지원금', t };
+  if (lucky) up['players/' + lucky + '/gifts/d' + d + 'G'] = { amt: LUCKY_BONUS, why: '오늘의 행운', t };
+  DAILY[d] = { last, lucky: lucky || '', at: t };        // 낙관적 반영 (실패하면 다음 구독에서 덮어씌워짐)
+  update(ref(db), up).catch(() => { delete DAILY[d]; });
+  render();
+}
+function tick() { if (!ready) return; claimAttendance(); applyGifts(); tryDraw(); }
+setInterval(tick, 20000);
+
 function showEnd(mine) {
   if (!ended) return;
   $('end-title').textContent = mine ? '🏆 데카 달성!!' : '🔒 시즌 종료!';
@@ -397,12 +481,11 @@ function render() {
   if (render.last !== step) { drawKnuckle(step); render.last = step; }
   $('stepname').textContent = STEPS[step - 1];
   $('steplv').textContent = `${step}단계 / 10단계`;
-  const rt = step >= 10 ? '🏆 데카 달성!' : `다음 단계 성공 확률 <b style="color:var(--gold)">${RATE[step - 1]}%</b>`;
-  $('rate').innerHTML = rt;
+  $('rate').innerHTML = step >= 10 ? '🏆 데카 달성!' : `다음 단계 성공 확률 <b style="color:var(--gold)">${RATE[step - 1]}%</b>`;
   const en = p ? p.energy : 0;
-  $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>`).join('');
+  $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>`).join('') + (en > MAXE ? `<span class="more">+${en - MAXE}</span>` : '');
   const ms = p ? Math.max(0, p.at + REGEN - Date.now()) : 0;
-  $('etext').textContent = !p ? '' : `체력 ${en}/${MAXE}` + (en < MAXE ? ` · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}` : ' (가득)');
+  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
   const go = $('go');
   if (!db) { go.disabled = true; go.textContent = '⚠️ 서버 설정 필요'; }
   else if (!ready) { go.disabled = true; go.textContent = '⏳ 불러오는 중...'; }
@@ -413,12 +496,23 @@ function render() {
   else if (p.energy < 1) { go.disabled = true; go.textContent = '❤️ 체력 충전 중...'; go.onclick = enhance; }
   else { go.disabled = false; go.textContent = '🥊 강화하기! (❤️-1)'; go.onclick = enhance; }
   $('ladder').innerHTML = STEPS.map((n, i) => `<div class="${i + 1 < step ? 'done' : (i + 1 === step ? 'now' : '')}"><span>${i + 1 < step ? '✔' : (i + 1 === step ? '▶' : '·')} ${i + 1}단계 ${n}</span><small>${i < 9 ? '→ ' + RATE[i] + '%' : '완성'}</small></div>`).join('');
+  const order = [...NAMES].sort(rankKey), tries = (n) => P[n].tries.toLocaleString('ko-KR');
   $('pcount').textContent = NAMES.length ? `(${NAMES.length}명)` : '';
-  $('players').innerHTML = [...NAMES].sort((a, b) => a.localeCompare(b, 'ko')).map((n) => `<div class="pl ${n === me ? 'mine' : ''}"><img src="${avatarURL(P[n].hair)}" alt=""><span class="nm">${esc(n)}</span><span class="st">${P[n].step}단계 · ${STEPS[P[n].step - 1].split(' ')[0]}</span></div>`).join('') || '<div style="color:var(--dim);font-size:.85rem">아직 참가자가 없어요. 첫 번째 주인공이 되어보세요!</div>';
+  $('players').innerHTML = order.map((n, i) => `<div class="pl ${n === me ? 'mine' : ''}"><span class="rk">${i + 1}</span><img src="${avatarURL(P[n].hair)}" alt=""><span class="nm">${esc(n)}<br><small style="color:var(--dim)">시도 ${tries(n)}회 · 성공 ${P[n].ok}회</small></span><span class="st">${P[n].step}단계<br><small>${short(P[n].step)}</small></span></div>`).join('') || '<div style="color:var(--dim);font-size:.85rem">아직 참가자가 없어요. 첫 번째 주인공이 되어보세요!</div>';
+  const top = order.filter((n) => P[n].tries > 0).slice(0, 3), slot = (k, cls, medal) => { const n = top[k]; return n ? `<div class="pcol ${cls} ${n === me ? 'mine' : ''}"><div class="who">${k === 0 ? '<div class="crown">👑</div>' : ''}<img src="${avatarURL(P[n].hair)}" alt=""><div class="pn">${esc(n)}</div><div class="ps">${P[n].step}단계 ${short(P[n].step)}<br>시도 ${tries(n)}회</div></div><div class="block">${medal}</div></div>` : `<div class="pcol ${cls} empty"><div class="who"><img src="${avatarURL('#555555')}" alt=""><div class="pn">-</div><div class="ps">비어 있음</div></div><div class="block">${medal}</div></div>`; };
+  $('podium').innerHTML = slot(1, 'r2', '🥈') + slot(0, 'r1', '🥇') + slot(2, 'r3', '🥉');
+  const tt = NAMES.reduce((a, n) => a + P[n].tries, 0);
+  $('totals').textContent = NAMES.length ? `전체 ${tt.toLocaleString('ko-KR')}회 시도` : '';
+  const dd = DAILY[kstDate()], att = p && p.att === kstDate();
+  $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 운영자는 제외</span>';
   const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
   if (ended) eb.textContent = `🔒 시즌 종료! ${ended.name}님이 ${ended.tries}번 만에 10단계 데카를 완성했어요 🏆`;
   const adm = me === ADMIN && p; $('admin').style.display = adm ? 'block' : 'none';
-  if (adm) $('admin-list').innerHTML = NAMES.filter((n) => n !== ADMIN).map((n) => `<div class="arow"><span>${esc(n)} · ${P[n].step}단계 · ${P[n].tries}회${P[n].pin ? '' : ' · 🔓'}</span><span><button class="btn gray" onclick="resetPin('${n}')">비번 초기화</button><button class="btn red" onclick="delPlayer('${n}')">삭제</button></span></div>`).join('') || '<div style="font-size:.8rem;color:var(--dim)">다른 참가자가 없어요</div>';
+  if (adm) {
+    const key = NAMES.join('|'), sel = $('g-who');
+    if (sel.dataset.k !== key) { const cur = sel.value; sel.innerHTML = NAMES.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join(''); sel.dataset.k = key; if (NAMES.includes(cur)) sel.value = cur; }
+    $('admin-list').innerHTML = NAMES.filter((n) => n !== ADMIN).map((n) => `<div class="arow"><span>${esc(n)} · ${P[n].step}단계 · ${P[n].tries}회 · ❤️${P[n].energy}${P[n].pin ? '' : ' · 🔓'}</span><span><button class="btn gray" onclick="resetPin('${n}')">비번 초기화</button><button class="btn red" onclick="delPlayer('${n}')">삭제</button></span></div>`).join('') || '<div style="font-size:.8rem;color:var(--dim)">다른 참가자가 없어요</div>';
+  }
 }
 setInterval(() => { if (ready) render(); }, 1000);
 buildHair();
@@ -439,7 +533,7 @@ function startJoin() {
   if (me && NAMES.includes(me)) { const q = P[me]; if (q.pin && ls.get('knk_tok_' + me) === q.pin) return selectMe(me); return window.pickName(me); }
   openJoin();
 }
-function selectMe(n) { me = n; ls.set('knk_me', n); closeJoin(); render(); }
+function selectMe(n) { me = n; ls.set('knk_me', n); closeJoin(); render(); setTimeout(tick, 200); }
 window.pickName = (n) => {
   closeJoin(); const q = P[n]; if (!q) return openJoin();
   if (q.pin && ls.get('knk_tok_' + n) === q.pin) return selectMe(n);
@@ -468,7 +562,7 @@ window.submitPin = async () => {
   } else {
     const isNew = !NAMES.includes(n);
     try {
-      if (isNew) { const f = fresh(); f.pin = h; await set(ref(db, 'players/' + n), f); P[n] = f; if (!NAMES.includes(n)) NAMES.push(n); }
+      if (isNew) { const f = fresh(); f.pin = h; await set(ref(db, 'players/' + n), f); P[n] = norm(f); if (!NAMES.includes(n)) NAMES.push(n); }
       else { await update(ref(db, 'players/' + n), { pin: h }); P[n].pin = h; }
     } catch (e) { $('err').textContent = '저장 실패: ' + (e.code || e.message); return; }
   }
@@ -479,6 +573,20 @@ window.submitPin = async () => {
 /* ============ 운영자 ============ */
 window.resetPin = (n) => { if (me !== ADMIN || !confirm(`'${n}'님의 비밀번호를 초기화할까요?`)) return; update(ref(db, 'players/' + n), { pin: null }).then(() => toast(`'${n}' 비밀번호 초기화 완료 (다음 입장 때 새로 설정)`)).catch((e) => toast('❌ ' + (e.code || e.message))); };
 window.delPlayer = (n) => { if (me !== ADMIN || !confirm(`'${n}' 캐릭터를 삭제할까요? 되돌릴 수 없어요.`)) return; remove(ref(db, 'players/' + n)).then(() => toast(`'${n}' 삭제됨`)).catch((e) => toast('❌ ' + (e.code || e.message))); };
+function giftTo(name, amt, why) { const id = 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); return [`players/${name}/gifts/${id}`, { amt, why, t: Date.now() }]; }
+window.grant = () => {
+  if (me !== ADMIN) return; const who = $('g-who').value, amt = Math.floor(Number($('g-amt').value));
+  if (!NAMES.includes(who) || !(amt >= 1 && amt <= 100)) return toast('받는 사람과 1~100 사이 수를 확인해주세요');
+  if (!confirm(`'${who}'님에게 체력 ${amt}개를 지급할까요?`)) return;
+  const [k, v] = giftTo(who, amt, '운영자 지급'); update(ref(db), { [k]: v }).then(() => toast(`🎁 ${who}님에게 체력 +${amt} 지급 (접속 중이면 바로 반영)`)).catch((e) => toast('❌ ' + (e.code || e.message)));
+};
+window.grantAll = () => {
+  if (me !== ADMIN) return; const amt = Math.floor(Number($('g-amt').value));
+  if (!(amt >= 1 && amt <= 100)) return toast('1~100 사이로 입력해주세요');
+  if (!confirm(`운영자를 뺀 전원(${NAMES.filter((n) => n !== ADMIN).length}명)에게 체력 ${amt}개씩 지급할까요?`)) return;
+  const up = {}; NAMES.filter((n) => n !== ADMIN).forEach((n) => { const [k, v] = giftTo(n, amt, '운영자 지급'); up[k] = v; });
+  update(ref(db), up).then(() => toast(`🎁 전원에게 체력 +${amt} 지급`)).catch((e) => toast('❌ ' + (e.code || e.message)));
+};
 window.backupData = () => {
   if (me !== ADMIN) return;
   const data = { exported: new Date().toISOString(), ended, players: {} }; NAMES.forEach((n) => { const { _t, ...rest } = P[n]; data.players[n] = rest; });
