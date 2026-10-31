@@ -134,6 +134,11 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
 <div id="status">⏳ 서버에 연결하는 중...</div>
 <div id="endbar"></div>
 
+<div class="card" id="evcard" style="display:none;border-color:#e8590c">
+  <div class="title" id="evtitle">🎪 이벤트</div>
+  <div class="dl" id="evbody"></div>
+</div>
+
 <div class="card">
   <div class="me">
     <canvas id="me-av" width="32" height="40"></canvas>
@@ -169,11 +174,6 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
 </div>
 
 <div class="card">
-  <div class="title">🎯 주말 단체 목표</div>
-  <div class="dl" id="wk"></div>
-</div>
-
-<div class="card">
   <div class="title">🏅 현재 순위 TOP 3 <span style="color:var(--dim);font-size:.72rem">단계↑ · 같으면 시도 적은 순</span></div>
   <div class="podium" id="podium"></div>
   <div id="totals" style="text-align:center;font-size:.75rem;color:var(--dim)"></div>
@@ -193,7 +193,7 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
   <div class="title">📜 규칙</div>
   <ul>
     <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 20개까지 충전돼요. (이벤트로 받은 체력은 20개를 넘어도 보관돼요)</li>
-    <li>🎯 <b>주말 단체 목표</b>: 토·일(한국 시간) 이틀 동안 다 같이 (참가자 수 × 30회) 시도하면 <b>전원 체력 +20</b>!</li>
+    <li>🎪 가끔 <b>이벤트</b>(충전 배속, 단체 목표 등)가 열려요. 열리면 화면 위쪽에 카드가 나타나요!</li>
     <li>매일 첫 접속 <b>출석 보너스 +5</b>! 하루 한 명에게는 <b>꼴찌 지원금 +20</b>, 또 한 명에게는 <b>랜덤 행운 +20</b>이 지급돼요. 단, 어제나 오늘 출석한 사람만 대상이에요. (0시 기준)</li>
     <li>결과는 <b>성공(한 단계 상승)</b> 아니면 <b>유지</b>, 둘 중 하나예요. 파괴도 하락도 없습니다.</li>
     <li>위 단계로 갈수록 성공 확률이 크게 낮아집니다. 실패가 쌓여도 확률은 오르지 않아요.</li>
@@ -207,6 +207,13 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
   <button class="btn" style="width:100%;margin-bottom:10px" onclick="grantAll()">🎁 전원에게 지급</button>
   <div class="agrant"><span style="flex:1;align-self:center;font-size:.8rem;color:var(--dim)">위에서 고른 사람의 단계를 직접 지정 (1~10)</span><input id="s-step" type="number" value="1" min="1" max="10"><button class="btn" onclick="setStep()">단계 지정</button></div>
   <div id="admsg" style="font-size:.8rem;color:var(--ok);min-height:20px;margin-bottom:6px"></div>
+  <div class="title" style="margin-top:6px">🎪 이벤트 열기</div>
+  <div class="agrant"><select id="ev-kind"><option value="regen">⚡ 충전 배속</option><option value="goal">🎯 단체 목표</option></select><input id="ev-title" type="text" maxlength="14" placeholder="이름(선택)" style="flex:1;width:auto;min-width:0"></div>
+  <div class="agrant"><input id="ev-mult" type="number" value="3" min="2" max="10"><input id="ev-per" type="number" value="30" min="1" max="1000"><input id="ev-bonus" type="number" value="20" min="1" max="100"><span style="align-self:center;font-size:.72rem;color:var(--dim)">배속 · 1인당 횟수 · 보상체력</span></div>
+  <div class="agrant"><input id="ev-start" type="time" style="width:auto;flex:1"><input id="ev-dur" type="number" value="120" min="10" max="1440"><span style="align-self:center;font-size:.8rem;color:var(--dim)">분간</span></div>
+  <div style="font-size:.72rem;color:var(--dim);margin-bottom:6px">시작 시각을 비우면 지금 바로 시작(한국 시간). 충전 배속은 첫째, 단체 목표는 둘째·셋째 칸을 써요.</div>
+  <div class="agrant"><button class="btn" style="flex:1" onclick="openEvent()">🎪 이벤트 열기</button><button class="btn red" onclick="closeEvent()">종료</button></div>
+  <div id="admsg2" style="font-size:.8rem;color:var(--ok);min-height:18px;margin-bottom:8px"></div>
   <div id="admin-list"></div>
   <button class="btn green" style="width:100%;margin-top:8px" onclick="backupData()">💾 데이터 백업 다운로드</button>
 </div>
@@ -260,7 +267,7 @@ const STEPS = ['모노 (Mono)', '다이 (Di)', '트라이 (Tri)', '테트라 (Te
 const TIER = ['#9aa0a6', '#c47a3d', '#cfd6df', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#ff922b', '#ffffff'];
 const HAIRS = ['#6b4a2b', '#2b2b3a', '#e8c15a', '#d6336c', '#a56cc1', '#4dabf7', '#38d9a9', '#e8590c', '#f1f3f5', '#c92a2a'];
 const short = (n) => STEPS[n - 1].split(' ')[0];
-const LAST_FREE = 0.15;   // 🛡️ 하위 30%(추격 모드 대상, 운영자 제외)는 강화할 때 15% 확률로 체력이 소모되지 않음
+const LAST_FREE = 0.15;   // 🛡️ 추격 모드 대상은 강화할 때 15% 확률로 체력이 소모되지 않음
 const kstYesterday = () => new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10);
 const kstDate = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜 (0시 기준)
 const WIN = ['너클이 번쩍이며 한 단계 진화했다!', '주먹에 기운이 모이더니 단단하게 변했다!', '오오, 손맛이 확 달라졌다. 성공!', '너클이 금빛을 내뿜었다!', '꽉 쥔 주먹 안에서 빛이 터졌다!'];
@@ -362,20 +369,26 @@ let db = null, ready = false, NAMES = [], P = {}, me = ls.get('knk_me') || null,
 const fresh = (hair) => ({ step: 1, energy: MAXE, at: Date.now(), tries: 0, ok: 0, hair: hair || HAIRS[0], pin: '' });
 function norm(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', egg: raw.egg === 1, wk: typeof raw.wk === 'string' ? raw.wk.slice(0, 10) : '', wn: Math.floor(num(raw.wn, 0, 1e6, 0)), att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
+  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', egg: raw.egg === 1, ek: typeof raw.ek === 'string' ? raw.ek.slice(0, 20) : '', en: Math.floor(num(raw.en, 0, 1e6, 0)), ev: raw.ev && typeof raw.ev === 'object' ? { id: String(raw.ev.id || '').slice(0, 20), kind: raw.ev.kind === 'goal' ? 'goal' : 'regen', title: String(raw.ev.title || '이벤트').slice(0, 20), mult: num(raw.ev.mult, 1, 10, 2), per: Math.floor(num(raw.ev.per, 1, 1000, 30)), bonus: Math.floor(num(raw.ev.bonus, 1, 100, 20)), start: num(raw.ev.start, 0, 4e12, 0), end: num(raw.ev.end, 0, 4e12, 0) } : null, att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
 }
-let CHASE = new Set();                                    // 🚀 추격 모드: 순위 하위 30%(운영자 제외)는 충전 2배
-function calcChase() { const r = NAMES.filter((n) => n !== ADMIN && P[n]).sort(rankKey); CHASE = new Set(r.length >= 2 ? r.slice(r.length - Math.max(1, Math.round(r.length * 0.3))) : []); }
-const WEEK_PER = 30, WEEK_BONUS = 20;   // 주말 단체 목표: 참가자 1인당 30회, 달성하면 전원 +20
-const weekKey = () => { const k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(); return new Date(k.getTime() - (d === 0 ? 864e5 : 0)).toISOString().slice(0, 10); };   // 그 주말의 토요일 날짜
-function weeklyStats() {
-  const key = weekKey(), yd = kstYesterday(), names = NAMES.filter((n) => n !== ADMIN && P[n]);
-  const pool = names.filter((n) => (P[n].att && P[n].att >= yd) || (P[n].wk === key && P[n].wn > 0));   // 잠수 계정은 목표 인원에서 제외
-  const total = names.reduce((a, n) => a + (P[n].wk === key ? P[n].wn : 0), 0);
-  return { key, total, goal: Math.max(1, pool.length) * WEEK_PER, n: pool.length };
+let CHASE = new Set();                                    // 🚀 추격 모드: 1등과 2단계 이상 차이 + 시도 가장 적은 2명은 충전 2배·15% 무소모
+const CHASE_GAP = 2;   // 1등과 2단계 이상 차이 나는 사람 + 시도 횟수가 가장 적은 2명 (운영자 제외)
+function calcChase() {
+  const r = NAMES.filter((n) => n !== ADMIN && P[n]); CHASE = new Set(); if (r.length < 2) return;
+  const lead = Math.max(...r.map((n) => P[n].step));
+  r.forEach((n) => { if (lead - P[n].step >= CHASE_GAP) CHASE.add(n); });
+  [...r].sort((a, b) => P[a].tries - P[b].tries || a.localeCompare(b, 'ko')).slice(0, 2).forEach((n) => CHASE.add(n));
 }
-const isWeekend = () => [0, 6].includes(new Date(Date.now() + 9 * 3600e3).getUTCDay());   // 한국 시간 토·일
-const regenIv = () => REGEN / (CHASE.has(me) ? 2 : 1);
+const getEv = () => { const e = P[ADMIN] && P[ADMIN].ev; return e && e.id && e.end > e.start ? e : null; };   // 🎪 운영자가 여는 이벤트 (조돌맹 계정에 저장)
+const evState = (e, t = Date.now()) => !e ? 'none' : t < e.start ? 'soon' : t < e.end ? 'live' : 'over';
+const evMult = () => { const e = getEv(); return e && e.kind === 'regen' && evState(e) === 'live' ? e.mult : 1; };
+function evStats(e) {
+  const yd = kstYesterday(), names = NAMES.filter((n) => n !== ADMIN && P[n]);
+  const pool = names.filter((n) => (P[n].att && P[n].att >= yd) || (P[n].ek === e.id && P[n].en > 0));   // 잠수 계정은 목표 인원에서 제외
+  const total = names.reduce((a, n) => a + (P[n].ek === e.id ? P[n].en : 0), 0);
+  return { total, goal: Math.max(1, pool.length) * e.per, n: pool.length };
+}
+const regenIv = () => REGEN / (CHASE.has(me) ? 2 : 1) / evMult();
 function refill(p) {
   const now = Date.now(), iv = regenIv();
   if (p.energy >= MAXE) { p.at = now; return; }          // 가득 차면 더 충전되지 않음
@@ -399,7 +412,7 @@ if (db) {
     NAMES = Object.keys(val).filter((n) => NAME_RE.test(n) && val[n] && typeof val[n] === 'object');
     NAMES.forEach((n) => {
       const q = norm(val[n]) || fresh();
-      if (n === me && !first && P[n] && Date.now() - (P[n]._t || 0) < 1500) { P[n].gifts = q.gifts; return; }   // 방금 내가 바꾼 값은 유지(선물만 반영)
+      if (n === me && !first && P[n] && Date.now() - (P[n]._t || 0) < 1500) { P[n].gifts = q.gifts; P[n].ev = q.ev; return; }   // 방금 내가 바꾼 값은 유지(선물만 반영)
       if (P[n]) Object.assign(P[n], q); else P[n] = q;                                // 같은 객체에 합쳐서 참조 유지
     });
     Object.keys(P).forEach((n) => { if (!NAMES.includes(n)) delete P[n]; });
@@ -428,7 +441,7 @@ window.enhance = function () {
     let cost = 1, note = '';
     if (CHASE.has(me) && Math.random() < LAST_FREE) { cost = 0; note = '<br>🛡️ 추격의 기세! 체력이 소모되지 않았어요'; }
     p.energy = Math.max(0, p.energy - cost); p.tries++; p._t = Date.now();
-    if (isWeekend()) { const wk = weekKey(); if (p.wk !== wk) { p.wk = wk; p.wn = 0; } p.wn++; }
+    { const e = getEv(); if (e && e.kind === 'goal' && evState(e) === 'live') { if (p.ek !== e.id) { p.ek = e.id; p.en = 0; } p.en++; } }
     const from = p.step, win = Math.random() * 100 < RATE[from - 1];
     if (win) { p.step++; p.ok++; }
     const to = p.step;
@@ -436,7 +449,7 @@ window.enhance = function () {
     void fr.offsetWidth; fr.classList.add(win ? 'pop' : 'hit');
     if (win) { const pl = $('plus'); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); (to === 10 ? Snd.big : Snd.win)(); } else Snd.stay();
     busy = false; render();
-    if (to >= 10) finish(p); else { savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok, wk: p.wk || '', wn: p.wn || 0 }); setTimeout(tryWeekly, 300); }
+    if (to >= 10) finish(p); else { savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok, ek: p.ek || '', en: p.en || 0 }); setTimeout(tryEvent, 300); }
   }, 700);
 };
 function finish(p) {
@@ -492,14 +505,16 @@ function tryDraw() {                                      // 오늘 첫 접속�
   update(ref(db), up).catch(() => { delete DAILY[d]; });
   render();
 }
-function tryWeekly() {                                   // 주말 목표를 채우면 전원에게 선물 쪽지를 한 번만 지급
-  if (!ready || !dailyReady || ended || !me || !P[me] || !isWeekend()) return;
-  const w = weeklyStats(), key = 'W' + w.key; if (DAILY[key] || w.total < w.goal) return;
+function tryEvent() {                                    // 단체 목표 이벤트: 목표를 채우면 전원에게 선물 쪽지를 한 번만 지급
+  if (!ready || !dailyReady || ended || !me || !P[me]) return;
+  const e = getEv(); if (!e || e.kind !== 'goal' || evState(e) !== 'live') return;
+  const key = 'E' + e.id; if (DAILY[key]) return;
+  const w = evStats(e); if (w.total < w.goal) return;
   const t = Date.now(), rec = { at: t, total: w.total, goal: w.goal }, up = { ['meta/daily/' + key]: rec };
-  NAMES.filter((n) => n !== ADMIN).forEach((n) => { up['players/' + n + '/gifts/' + key] = { amt: WEEK_BONUS, why: '주말 단체 목표 달성', t }; });
+  NAMES.filter((n) => n !== ADMIN).forEach((n) => { up['players/' + n + '/gifts/' + key] = { amt: e.bonus, why: e.title + ' 달성', t }; });
   DAILY[key] = rec; update(ref(db), up).catch(() => { delete DAILY[key]; }); render();
 }
-function tick() { if (!ready) return; claimAttendance(); applyGifts(); tryDraw(); tryWeekly(); }
+function tick() { if (!ready) return; claimAttendance(); applyGifts(); tryDraw(); tryEvent(); }
 setInterval(tick, 20000);
 
 function showEnd(mine) {
@@ -539,7 +554,7 @@ function render() {
   $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>${(i + 1) % 10 === 0 && i + 1 < MAXE ? '<br>' : ''}`).join('') + (en > MAXE ? `<span class="more">+${en - MAXE}</span>` : '');
   const ms = p ? Math.max(0, p.at + regenIv() - Date.now()) : 0, chase = p && CHASE.has(me);
   if (ready && chase && !render.cw) { render.cw = true; toast(`🚀 추격 모드 발동! 체력 충전 2배 + 강화 시 ${LAST_FREE * 100}% 확률로 체력 무소모 (비밀이에요 🤫)`); Snd.win(); } else if (!chase) render.cw = false;
-  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${chase ? ' 🚀추격 2배' : ''}${chase ? ' · 🛡️체력 소모 15% 면제' : ''}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
+  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${evMult() > 1 ? ' 🎪이벤트 ' + evMult() + '배' : ''}${chase ? ' 🚀추격 2배' : ''}${chase ? ' · 🛡️체력 소모 15% 면제' : ''}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
   const go = $('go');
   if (!db) { go.disabled = true; go.textContent = '⚠️ 서버 설정 필요'; }
   else if (!ready) { go.disabled = true; go.textContent = '⏳ 불러오는 중...'; }
@@ -557,8 +572,16 @@ function render() {
   $('podium').innerHTML = slot(1, 'r2', '🥈') + slot(0, 'r1', '🥇') + slot(2, 'r3', '🥉');
   const tt = NAMES.reduce((a, n) => a + P[n].tries, 0);
   $('totals').textContent = NAMES.length ? `전체 ${tt.toLocaleString('ko-KR')}회 시도` : '';
-  const w = weeklyStats(), wdone = !!DAILY['W' + w.key];
-  $('wk').innerHTML = isWeekend() ? `토·일 이틀 동안 다 같이 <b>${w.goal}회</b> 시도하면 <b>전원 체력 +${WEEK_BONUS}</b>!<br>진행 <b>${w.total}</b> / ${w.goal}회 <span style="color:var(--dim);font-size:.75rem">(참가 ${w.n}명 × ${WEEK_PER}회)</span><div class="bar"><i style="width:${Math.min(100, w.total / w.goal * 100)}%"></i></div>${wdone ? '<span class="got">✅ 목표 달성! 전원에게 체력 +' + WEEK_BONUS + ' 지급됐어요 (접속하면 자동 수령)</span>' : '<span style="color:var(--dim);font-size:.75rem">내 주말 시도: ' + (p && p.wk === w.key ? p.wn : 0) + '회</span>'}` : `토·일(한국 시간)에 열려요! 이틀 동안 모두 합쳐 <b>(참가자 수 × ${WEEK_PER}회)</b> 시도하면 <b>전원 체력 +${WEEK_BONUS}</b>.<br><span style="color:var(--dim);font-size:.75rem">최근 접속한 사람 수 기준이라 잠수 계정은 목표를 올리지 않아요.</span>`;
+  { const e = getEv(), st = evState(e), now = Date.now(), card = $('evcard'), hm = (t) => new Date(t + 9 * 3600e3).toISOString().slice(11, 16);
+    const show = e && (st === 'soon' || st === 'live' || (st === 'over' && now < e.end + 30 * 60000)); card.style.display = show ? 'block' : 'none';
+    if (show) {
+      const rem = Math.max(0, e.end - now), fmt = `${Math.floor(rem / 3600000)}:${String(Math.floor(rem / 60000) % 60).padStart(2, '0')}:${String(Math.floor(rem / 1000) % 60).padStart(2, '0')}`;
+      $('evtitle').textContent = '🎪 ' + e.title + (st === 'live' ? ' · 진행 중!' : st === 'soon' ? ' · 곧 시작' : ' · 종료');
+      if (e.kind === 'regen') $('evbody').innerHTML = st === 'soon' ? `⚡ <b>${hm(e.start)}</b>부터 <b>${hm(e.end)}</b>까지 체력 충전이 <b>${e.mult}배</b>!` : st === 'live' ? `⚡ 체력 충전 <b>${e.mult}배</b>! 남은 시간 <b>${fmt}</b> <span style="color:var(--dim);font-size:.75rem">(${hm(e.end)}까지)</span>` : '이벤트가 끝났어요. 즐거우셨나요? 🥊';
+      else { const w = evStats(e), done = !!DAILY['E' + e.id];
+        $('evbody').innerHTML = st === 'soon' ? `🎯 <b>${hm(e.start)}</b>~<b>${hm(e.end)}</b> 다 같이 <b>(참가자 수 × ${e.per}회)</b> 시도하면 <b>전원 체력 +${e.bonus}</b>!` : `🎯 다 같이 <b>${w.goal}회</b> 시도하면 <b>전원 체력 +${e.bonus}</b>!<br>진행 <b>${w.total}</b> / ${w.goal}회 <span style="color:var(--dim);font-size:.75rem">(참가 ${w.n}명 × ${e.per}회)</span><div class="bar"><i style="width:${Math.min(100, w.total / w.goal * 100)}%"></i></div>${done ? '<span class="got">✅ 목표 달성! 전원에게 체력 +' + e.bonus + ' 지급됐어요 (접속하면 자동 수령)</span>' : '<span style="color:var(--dim);font-size:.75rem">내 시도: ' + (p && p.ek === e.id ? p.en : 0) + '회 · 남은 시간 ' + fmt + '</span>'}`; }
+    }
+    if (ready && e && st === 'live' && render.ea !== e.id) { render.ea = e.id; toast('🎪 이벤트 시작! ' + e.title); Snd.big(); } }
   const dd = DAILY[kstDate()], att = p && p.att === kstDate();
   $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 어제·오늘 출석한 사람만 대상 · 운영자 제외</span>';
   const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
@@ -642,6 +665,20 @@ window.setStep = () => {
   if (!confirm(`'${who}'님의 단계를 ${st}단계(${short(st)})로 바꿀까요?` + (st === 10 ? '\n(10단계로 지정해도 시즌 종료는 일어나지 않아요)' : ''))) return;
   update(ref(db, 'players/' + who), { step: st }).then(() => { if (P[who]) P[who].step = st; toast(`✅ ${who}님 → ${st}단계`); $('admsg').textContent = `✅ ${new Date().toLocaleTimeString('ko-KR')} · ${who}님을 ${st}단계(${short(st)})로 지정했어요`; render(); }).catch((e) => toast('❌ ' + (e.code || e.message)));
 };
+window.openEvent = () => {
+  if (me !== ADMIN) return; const kind = $('ev-kind').value === 'goal' ? 'goal' : 'regen', mult = Number($('ev-mult').value), per = Math.floor(Number($('ev-per').value)), bonus = Math.floor(Number($('ev-bonus').value)), dur = Math.floor(Number($('ev-dur').value)), hmv = $('ev-start').value;
+  if (kind === 'regen' && !(mult >= 2 && mult <= 10)) return toast('배속은 2~10 사이로 넣어주세요');
+  if (kind === 'goal' && !(per >= 1 && per <= 1000 && bonus >= 1 && bonus <= 100)) return toast('1인당 횟수(1~1000)와 보상 체력(1~100)을 확인해주세요');
+  if (!(dur >= 10 && dur <= 1440)) return toast('시간은 10~1440분 사이로 넣어주세요');
+  let start = Date.now();
+  if (hmv) { const [h, m] = hmv.split(':').map(Number), k = new Date(Date.now() + 9 * 3600e3), base = Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate(), h, m) - 9 * 3600e3; if (base > start) start = base; }
+  const title = $('ev-title').value.trim().slice(0, 14) || (kind === 'regen' ? '골든타임' : '단체 목표'), end = start + dur * 60000;
+  const ev = { id: Date.now().toString(36), kind, title, mult: kind === 'regen' ? mult : 1, per: kind === 'goal' ? per : 1, bonus: kind === 'goal' ? bonus : 1, start, end };
+  const hm = (t) => new Date(t + 9 * 3600e3).toISOString().slice(11, 16);
+  if (!confirm(`'${title}' 이벤트를 ${hm(start)}~${hm(end)}로 열까요?\n` + (kind === 'regen' ? `체력 충전 ${mult}배` : `전원 (참가자 수 × ${per}회) 달성 시 체력 +${bonus}`))) return;
+  update(ref(db, 'players/' + ADMIN), { ev }).then(() => { $('admsg2').textContent = `🎪 ${new Date().toLocaleTimeString('ko-KR')} · '${title}' ${hm(start)}~${hm(end)} 등록 완료`; toast('🎪 이벤트를 열었어요'); }).catch((e) => toast('❌ ' + (e.code || e.message)));
+};
+window.closeEvent = () => { if (me !== ADMIN || !confirm('진행 중이거나 예정된 이벤트를 종료할까요?')) return; update(ref(db, 'players/' + ADMIN), { ev: null }).then(() => { $('admsg2').textContent = '이벤트를 종료했어요'; toast('🎪 이벤트 종료'); }).catch((e) => toast('❌ ' + (e.code || e.message))); };
 window.grantAll = () => {
   if (me !== ADMIN) return; const amt = Math.floor(Number($('g-amt').value));
   if (!(amt >= 1 && amt <= 100)) return toast('1~100 사이로 입력해주세요');
