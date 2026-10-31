@@ -83,6 +83,8 @@ header { position:relative; }
 /* 지원 / 운영자 */
 .dl { font-size:.85rem; line-height:1.9; }
 .dl b { color:var(--gold); }
+.bar { height:16px; background:var(--panel2); border:2px solid #000; margin:6px 0; position:relative; }
+.bar i { display:block; height:100%; background:linear-gradient(90deg,#2f9e44,#94d82d); transition:width .6s; }
 .dl .got { color:var(--ok); }
 .agrant { display:flex; gap:6px; margin-bottom:6px; }
 .agrant select, .agrant input { font-family:inherit; background:var(--panel2); color:#fff; border:2px solid var(--line); padding:8px; font-size:.9rem; }
@@ -167,6 +169,11 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
 </div>
 
 <div class="card">
+  <div class="title">🎯 주말 단체 목표</div>
+  <div class="dl" id="wk"></div>
+</div>
+
+<div class="card">
   <div class="title">🏅 현재 순위 TOP 3 <span style="color:var(--dim);font-size:.72rem">단계↑ · 같으면 시도 적은 순</span></div>
   <div class="podium" id="podium"></div>
   <div id="totals" style="text-align:center;font-size:.75rem;color:var(--dim)"></div>
@@ -186,6 +193,7 @@ body.shake { animation:shk .6s; } @keyframes shk { 20% { transform:translate(-6p
   <div class="title">📜 규칙</div>
   <ul>
     <li>강화는 ❤️ 체력 1개를 씁니다. 20분마다 1개씩 쌓이고, 20개까지 충전돼요. (이벤트로 받은 체력은 20개를 넘어도 보관돼요)</li>
+    <li>🎯 <b>주말 단체 목표</b>: 토·일(한국 시간) 이틀 동안 다 같이 (참가자 수 × 30회) 시도하면 <b>전원 체력 +20</b>!</li>
     <li>매일 첫 접속 <b>출석 보너스 +5</b>! 하루 한 명에게는 <b>꼴찌 지원금 +20</b>, 또 한 명에게는 <b>랜덤 행운 +20</b>이 지급돼요. 단, 어제나 오늘 출석한 사람만 대상이에요. (0시 기준)</li>
     <li>결과는 <b>성공(한 단계 상승)</b> 아니면 <b>유지</b>, 둘 중 하나예요. 파괴도 하락도 없습니다.</li>
     <li>위 단계로 갈수록 성공 확률이 크게 낮아집니다. 실패가 쌓여도 확률은 오르지 않아요.</li>
@@ -354,10 +362,19 @@ let db = null, ready = false, NAMES = [], P = {}, me = ls.get('knk_me') || null,
 const fresh = (hair) => ({ step: 1, energy: MAXE, at: Date.now(), tries: 0, ok: 0, hair: hair || HAIRS[0], pin: '' });
 function norm(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', egg: raw.egg === 1, att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
+  return { step: Math.floor(num(raw.step, 1, 10, 1)), energy: Math.floor(num(raw.energy, 0, ECAP, MAXE)), at: num(raw.at, 1, 4e12, Date.now()), tries: Math.floor(num(raw.tries, 0, 1e9, 0)), ok: Math.floor(num(raw.ok, 0, 1e9, 0)), hair: HEX_RE.test(raw.hair) ? raw.hair : HAIRS[0], pin: typeof raw.pin === 'string' ? raw.pin.slice(0, 80) : '', egg: raw.egg === 1, wk: typeof raw.wk === 'string' ? raw.wk.slice(0, 10) : '', wn: Math.floor(num(raw.wn, 0, 1e6, 0)), att: typeof raw.att === 'string' ? raw.att.slice(0, 10) : '', gifts: raw.gifts && typeof raw.gifts === 'object' ? raw.gifts : {} };
 }
 let CHASE = new Set();                                    // 🚀 추격 모드: 순위 하위 30%(운영자 제외)는 충전 2배
 function calcChase() { const r = NAMES.filter((n) => n !== ADMIN && P[n]).sort(rankKey); CHASE = new Set(r.length >= 2 ? r.slice(r.length - Math.max(1, Math.round(r.length * 0.3))) : []); }
+const WEEK_PER = 30, WEEK_BONUS = 20;   // 주말 단체 목표: 참가자 1인당 30회, 달성하면 전원 +20
+const weekKey = () => { const k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(); return new Date(k.getTime() - (d === 0 ? 864e5 : 0)).toISOString().slice(0, 10); };   // 그 주말의 토요일 날짜
+function weeklyStats() {
+  const key = weekKey(), yd = kstYesterday(), names = NAMES.filter((n) => n !== ADMIN && P[n]);
+  const pool = names.filter((n) => (P[n].att && P[n].att >= yd) || (P[n].wk === key && P[n].wn > 0));   // 잠수 계정은 목표 인원에서 제외
+  const total = names.reduce((a, n) => a + (P[n].wk === key ? P[n].wn : 0), 0);
+  return { key, total, goal: Math.max(1, pool.length) * WEEK_PER, n: pool.length };
+}
+const isWeekend = () => [0, 6].includes(new Date(Date.now() + 9 * 3600e3).getUTCDay());   // 한국 시간 토·일
 const regenIv = () => REGEN / (CHASE.has(me) ? 2 : 1);
 function refill(p) {
   const now = Date.now(), iv = regenIv();
@@ -411,6 +428,7 @@ window.enhance = function () {
     let cost = 1, note = '';
     if (CHASE.has(me) && Math.random() < LAST_FREE) { cost = 0; note = '<br>🛡️ 추격의 기세! 체력이 소모되지 않았어요'; }
     p.energy = Math.max(0, p.energy - cost); p.tries++; p._t = Date.now();
+    if (isWeekend()) { const wk = weekKey(); if (p.wk !== wk) { p.wk = wk; p.wn = 0; } p.wn++; }
     const from = p.step, win = Math.random() * 100 < RATE[from - 1];
     if (win) { p.step++; p.ok++; }
     const to = p.step;
@@ -418,7 +436,7 @@ window.enhance = function () {
     void fr.offsetWidth; fr.classList.add(win ? 'pop' : 'hit');
     if (win) { const pl = $('plus'); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); (to === 10 ? Snd.big : Snd.win)(); } else Snd.stay();
     busy = false; render();
-    if (to >= 10) finish(p); else savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok });
+    if (to >= 10) finish(p); else { savePart({ step: p.step, energy: p.energy, at: p.at, tries: p.tries, ok: p.ok, wk: p.wk || '', wn: p.wn || 0 }); setTimeout(tryWeekly, 300); }
   }, 700);
 };
 function finish(p) {
@@ -474,7 +492,14 @@ function tryDraw() {                                      // 오늘 첫 접속�
   update(ref(db), up).catch(() => { delete DAILY[d]; });
   render();
 }
-function tick() { if (!ready) return; claimAttendance(); applyGifts(); tryDraw(); }
+function tryWeekly() {                                   // 주말 목표를 채우면 전원에게 선물 쪽지를 한 번만 지급
+  if (!ready || !dailyReady || ended || !me || !P[me] || !isWeekend()) return;
+  const w = weeklyStats(), key = 'W' + w.key; if (DAILY[key] || w.total < w.goal) return;
+  const t = Date.now(), rec = { at: t, total: w.total, goal: w.goal }, up = { ['meta/daily/' + key]: rec };
+  NAMES.filter((n) => n !== ADMIN).forEach((n) => { up['players/' + n + '/gifts/' + key] = { amt: WEEK_BONUS, why: '주말 단체 목표 달성', t }; });
+  DAILY[key] = rec; update(ref(db), up).catch(() => { delete DAILY[key]; }); render();
+}
+function tick() { if (!ready) return; claimAttendance(); applyGifts(); tryDraw(); tryWeekly(); }
 setInterval(tick, 20000);
 
 function showEnd(mine) {
@@ -532,6 +557,8 @@ function render() {
   $('podium').innerHTML = slot(1, 'r2', '🥈') + slot(0, 'r1', '🥇') + slot(2, 'r3', '🥉');
   const tt = NAMES.reduce((a, n) => a + P[n].tries, 0);
   $('totals').textContent = NAMES.length ? `전체 ${tt.toLocaleString('ko-KR')}회 시도` : '';
+  const w = weeklyStats(), wdone = !!DAILY['W' + w.key];
+  $('wk').innerHTML = isWeekend() ? `토·일 이틀 동안 다 같이 <b>${w.goal}회</b> 시도하면 <b>전원 체력 +${WEEK_BONUS}</b>!<br>진행 <b>${w.total}</b> / ${w.goal}회 <span style="color:var(--dim);font-size:.75rem">(참가 ${w.n}명 × ${WEEK_PER}회)</span><div class="bar"><i style="width:${Math.min(100, w.total / w.goal * 100)}%"></i></div>${wdone ? '<span class="got">✅ 목표 달성! 전원에게 체력 +' + WEEK_BONUS + ' 지급됐어요 (접속하면 자동 수령)</span>' : '<span style="color:var(--dim);font-size:.75rem">내 주말 시도: ' + (p && p.wk === w.key ? p.wn : 0) + '회</span>'}` : `토·일(한국 시간)에 열려요! 이틀 동안 모두 합쳐 <b>(참가자 수 × ${WEEK_PER}회)</b> 시도하면 <b>전원 체력 +${WEEK_BONUS}</b>.<br><span style="color:var(--dim);font-size:.75rem">최근 접속한 사람 수 기준이라 잠수 계정은 목표를 올리지 않아요.</span>`;
   const dd = DAILY[kstDate()], att = p && p.att === kstDate();
   $('daily').innerHTML = (p ? `📅 출석 보너스 +${ATT_BONUS}: ${att ? '<span class="got">✅ 오늘 받았어요</span>' : '접속하면 자동 지급'}<br>` : '') + (dd ? `🆘 꼴찌 지원금 +${LAST_BONUS}: <b>${esc(dd.last)}</b><br>🎰 오늘의 행운 +${LUCKY_BONUS}: <b>${dd.lucky ? esc(dd.lucky) : '-'}</b>` : (dailyReady ? '오늘의 추첨 준비 중...' : '불러오는 중...')) + '<br><span style="color:var(--dim);font-size:.75rem">매일 0시에 새로 추첨 · 어제·오늘 출석한 사람만 대상 · 운영자 제외</span>';
   const eb = $('endbar'); eb.style.display = ended ? 'block' : 'none';
