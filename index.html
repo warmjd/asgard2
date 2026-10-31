@@ -252,6 +252,7 @@ const STEPS = ['모노 (Mono)', '다이 (Di)', '트라이 (Tri)', '테트라 (Te
 const TIER = ['#9aa0a6', '#c47a3d', '#cfd6df', '#ffd43b', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#ff922b', '#ffffff'];
 const HAIRS = ['#6b4a2b', '#2b2b3a', '#e8c15a', '#d6336c', '#a56cc1', '#4dabf7', '#38d9a9', '#e8590c', '#f1f3f5', '#c92a2a'];
 const short = (n) => STEPS[n - 1].split(' ')[0];
+const LAST_FREE = 0.15;   // 🛡️ 하위 30%(추격 모드 대상, 운영자 제외)는 강화할 때 15% 확률로 체력이 소모되지 않음
 const kstYesterday = () => new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10);
 const kstDate = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 한국 날짜 (0시 기준)
 const WIN = ['너클이 번쩍이며 한 단계 진화했다!', '주먹에 기운이 모이더니 단단하게 변했다!', '오오, 손맛이 확 달라졌다. 성공!', '너클이 금빛을 내뿜었다!', '꽉 쥔 주먹 안에서 빛이 터졌다!'];
@@ -407,11 +408,13 @@ window.enhance = function () {
     const p = P[me];                                    // 결과를 정하는 순간 항상 최신 내 데이터를 다시 잡는다
     if (!p || ended) { busy = false; render(); return; }
     refill(p); if (p.energy < 1) { busy = false; render(); return; }
-    p.energy -= 1; p.tries++; p._t = Date.now();
+    let cost = 1, note = '';
+    if (CHASE.has(me) && Math.random() < LAST_FREE) { cost = 0; note = '<br>🛡️ 추격의 기세! 체력이 소모되지 않았어요'; }
+    p.energy = Math.max(0, p.energy - cost); p.tries++; p._t = Date.now();
     const from = p.step, win = Math.random() * 100 < RATE[from - 1];
     if (win) { p.step++; p.ok++; }
     const to = p.step;
-    $('result').innerHTML = win ? `<b class="ok">✅ 성공!</b> ${short(from)} → <b class="ok">${short(to)}</b><br>${pick(WIN)}` : `<b class="bad">💨 유지</b> (${short(from)})<br>${pick(STAY)}`;
+    $('result').innerHTML = win ? `<b class="ok">✅ 성공!</b> ${short(from)} → <b class="ok">${short(to)}</b><br>${pick(WIN)}${note}` : `<b class="bad">💨 유지</b> (${short(from)})<br>${pick(STAY)}${note}`;
     void fr.offsetWidth; fr.classList.add(win ? 'pop' : 'hit');
     if (win) { const pl = $('plus'); pl.classList.remove('go'); void pl.offsetWidth; pl.classList.add('go'); (to === 10 ? Snd.big : Snd.win)(); } else Snd.stay();
     busy = false; render();
@@ -500,7 +503,6 @@ function render() {
   document.querySelectorAll('.sw').forEach((s) => s.classList.toggle('on', p && s.dataset.c.toLowerCase() === p.hair.toLowerCase()));
   if (p && $('hair-pick')) $('hair-pick').value = p.hair;
   calcChase();
-  calcChase();
   if (p) refill(p);
   const step = p ? p.step : 1; curStep = step;
   document.documentElement.style.setProperty('--tc', TIER[step - 1]);
@@ -511,8 +513,8 @@ function render() {
   const en = p ? p.energy : 0;
   $('hearts').innerHTML = Array.from({ length: MAXE }, (_, i) => `<span class="${i < en ? '' : 'e'}">❤️</span>${(i + 1) % 10 === 0 && i + 1 < MAXE ? '<br>' : ''}`).join('') + (en > MAXE ? `<span class="more">+${en - MAXE}</span>` : '');
   const ms = p ? Math.max(0, p.at + regenIv() - Date.now()) : 0, chase = p && CHASE.has(me);
-  if (ready && chase && !render.cw) { render.cw = true; toast('🚀 추격 모드 발동! 체력 충전이 2배로 빨라졌어요 (비밀이에요 🤫)'); Snd.win(); } else if (!chase) render.cw = false;
-  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${chase ? ' 🚀추격 2배' : ''}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
+  if (ready && chase && !render.cw) { render.cw = true; toast(`🚀 추격 모드 발동! 체력 충전 2배 + 강화 시 ${LAST_FREE * 100}% 확률로 체력 무소모 (비밀이에요 🤫)`); Snd.win(); } else if (!chase) render.cw = false;
+  $('etext').textContent = !p ? '' : `체력 ${en}` + (en < MAXE ? ` / ${MAXE} · 다음 충전 ${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${chase ? ' 🚀추격 2배' : ''}${chase ? ' · 🛡️체력 소모 15% 면제' : ''}` : (en > MAXE ? ' (보너스 포함)' : ' (가득)'));
   const go = $('go');
   if (!db) { go.disabled = true; go.textContent = '⚠️ 서버 설정 필요'; }
   else if (!ready) { go.disabled = true; go.textContent = '⏳ 불러오는 중...'; }
